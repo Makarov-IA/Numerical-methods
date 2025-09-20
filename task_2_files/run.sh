@@ -1,7 +1,7 @@
 clear && clear
 
-N=7
-h=0.001 #Если ввести h=0, то h станет равным 1/N
+N=1000
+h=0 #Если ввести h=0, то h станет равным 1/N
 Number_of_row_of_matrix_to_print=5
 Number_of_columns_of_matrix_to_print=6
 Number_of_vectors_to_print=5
