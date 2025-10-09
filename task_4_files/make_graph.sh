@@ -3,7 +3,7 @@ set term pngcairo size 1200,700 enhanced font ',14';
 set output 'plot_schema_${number_of_schema}.png';
 set grid;
 
-set xlabel 'ln(1/n)';
+set xlabel 'ln(1/h)';
 set ylabel 'ln(1/|y(1)-y_{n}|)';
 
 set xzeroaxis; set yzeroaxis;
