@@ -9,7 +9,7 @@ set ylabel 'ln(1/|y(1)-y_{n}|)';
 set xzeroaxis; set yzeroaxis;
 set xrange [0:*]; set yrange [0:*];
 
-set title 'schema=0';
+set title 'schema=${number_of_schema}';
 plot \
   'data_graph/tech_graph_${number_of_schema}_0.txt' using 1:2 with lines title 'A=1', \
   'data_graph/tech_graph_${number_of_schema}_1.txt' using 1:2 with lines title 'A=5', \
