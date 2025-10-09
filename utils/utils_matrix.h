@@ -1,5 +1,5 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef UTILS_MATRIX_H
+#define UTILS_MATRIX_H
 
 double * multiply_matrix_and_vector(double* matrix, int n, int m, double* vector, int k);
 double multiply_vector_and_vector(double* vector_1, double* vector_2, int n);

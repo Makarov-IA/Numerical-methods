@@ -3,7 +3,7 @@
 #include <math.h>
 #include <assert.h>
 #include <float.h>
-#include "../utils/utils.h" 
+#include "../utils/utils_matrix.h" 
 
 #define BG_YELLOW  "\033[43m"
 #define BG_WHITE   "\033[47m"
