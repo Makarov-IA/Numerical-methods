@@ -23,6 +23,7 @@ int main(int argc, char *argv[]) {
     double last_diff = DBL_MAX;
     double current_diff;
 
+    assert(argc >= 3);
     assert(sscanf(argv[1], "%d", &n) != 0);
     assert(sscanf(argv[2], "%lf", &x0) != 0);
     theoretical_der_at_x0 = exp(x0);
