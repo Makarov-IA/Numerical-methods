@@ -14,5 +14,8 @@ plot \
   'data_graph/tech_graph_${number_of_schema}_0.txt' using 1:2 with lines title 'A=1', \
   'data_graph/tech_graph_${number_of_schema}_1.txt' using 1:2 with lines title 'A=5', \
   'data_graph/tech_graph_${number_of_schema}_2.txt' using 1:2 with lines title 'A=10', \
-  'data_graph/tech_graph_${number_of_schema}_3.txt' using 1:2 with lines title 'A=100';
+  'data_graph/tech_graph_${number_of_schema}_3.txt' using 1:2 with lines title 'A=100', \
+  x with lines title 'y=x' lc rgb 'black', \
+  2*x with lines title 'y=2*x' lc rgb 'black', \
+  3*x with lines title 'y=3*x' lc rgb 'black';
 "

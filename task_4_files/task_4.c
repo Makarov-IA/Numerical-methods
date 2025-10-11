@@ -22,7 +22,6 @@ int main(int argc, char *argv[]) {
     
     double A[4] = {1,5,10,100};
     double H[5] = {pow(10,-1),pow(10,-2),pow(10,-3),pow(10,-4),pow(10,-5)};
-    double answers[20];
     char path[256];
     
     starting_point = 1;
@@ -65,7 +64,6 @@ int main(int argc, char *argv[]) {
                 break;
             }
 
-            answers[j+i*5] = y;
             printf("Answer: %.6e Error_normed: " BG_MAGENTA "%.6e" RESET " H: %.0e\n", y, \
                 fabs((y-real_solution)/(real_solution)), h);
             fprintf(files[i], "%.lf %.lf \n", -log(h), -log(fabs(y-real_solution)));
