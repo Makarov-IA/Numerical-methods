@@ -1,3 +1,4 @@
+set -euo pipefail #to be conf that if it is failed it won't continue to run
 clear&&clear
 
 for is_fixed_h in {0..1}; do #if h is fixed (used to prove the oreder of method)

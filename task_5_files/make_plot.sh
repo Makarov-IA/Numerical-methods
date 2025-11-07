@@ -1,3 +1,4 @@
+set -euo pipefail
 mkdir -p plots
 gnuplot -e "set term pngcairo size 1200,900 enhanced font ',14' dashed; \
 set output sprintf('plots/%s.png','${number_of_function}'); \
