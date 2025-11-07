@@ -6,7 +6,7 @@ task_4_files/task_4
 task_3_files/task_3
 task_2_files/task_2
 task_1_files/task_1
-.txt
+*.txt
 
 !.gitignore 
 !.gitkeep
