@@ -1,33 +1,11 @@
-gnuplot -e "
-
-set term pngcairo size 1200,700 enhanced font ',14';
-set output 'plots/plot_number_of_function_${number_of_function}.png';
-set grid;
-
-set xlabel 'x';
-set ylabel 'y';
-
-set xzeroaxis; set yzeroaxis;
-
-set title 'NumberOfFunction=${number_of_function}';
-plot \
-  'data_graph/number_of_function_${number_of_function}.txt' using 1:2 with lines lw 2 title 'CalculatedSol',\
-  'data_graph/number_of_function_${number_of_function}.txt' using 1:3 with lines lw 2 title 'RealSol'
-"
-
-
-gnuplot -e "
-
-set term pngcairo size 1200,700 enhanced font ',14';
-set output 'plots/plot_number_of_function_${number_of_function}H.png';
-set grid;
-
-set xlabel 'x';
-set ylabel 'h';
-
-set xzeroaxis; set yzeroaxis;
-
-set title 'HForNumberOfFunction=${number_of_function}';
-plot \
-  'data_graph/number_of_function_${number_of_function}.txt' using 1:4 with lines lw 2 title 'h'
-"
+mkdir -p plots
+gnuplot -e "set term pngcairo size 1200,900 enhanced font ',14' dashed; \
+set output sprintf('plots/%s.png','${number_of_function}'); \
+set multiplot layout 2,1 title 'Runge method' font ',14'; \
+set grid; set xzeroaxis; set yzeroaxis; \
+set xlabel 'x'; set ylabel 'y'; \
+plot sprintf('data_graph/%s.txt','${number_of_function}') every ::1 using 1:2 with lines lw 4 title 'Calculated', \
+     sprintf('data_graph/%s.txt','${number_of_function}') every ::1 using 1:3 with lines lw 3 dt 2 title 'Real'; \
+set xlabel 'x'; set ylabel 'h'; \
+plot sprintf('data_graph/%s.txt','${number_of_function}') every ::1 using 1:4 with lines lw 3  lc 'red' title 'h'; \
+unset multiplot; set output"
