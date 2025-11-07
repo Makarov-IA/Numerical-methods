@@ -15,5 +15,5 @@ plot \
   x t 'y=x+1' lc rgb 'green',\
   2*x + 1 t 'y=2*x+2' lc rgb 'black',\
   3*x + 2 t 'y=3*x+3' lc rgb 'orange',\
-  4*x + 3 t 'y=3*x+4' lc rgb 'blue';
-" 2>/dev/null
+  4*x + 3 t 'y=4*x+4' lc rgb 'blue';
+" 2>/dev/null #Отрубаем warning

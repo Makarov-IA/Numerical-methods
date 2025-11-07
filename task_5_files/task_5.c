@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     H_MIN = 1e-10;
     H_MAX = xR-x;
     max_diff = 0;
-    H[0] = h/8; H[1] = h/4; H[2] = h/2; 
+    H[0] = h/2; H[1] = h/4; H[2] = h/8; 
 
     switch (num_of_function) {
         case 1: 
@@ -110,6 +110,7 @@ int main(int argc, char *argv[]) {
     else {
         for (int i=0; i < 3; i++) {
             h = H[i];
+            max_diff = 0;
             x_small_step = x; y_small_step = y;
             while (x_small_step < xR) {
                 if (x_small_step + h > xR) {
