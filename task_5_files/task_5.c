@@ -6,15 +6,16 @@
 
 int main(int argc, char *argv[]) {
 
-    double xR, x, y, H_MIN, H_MAX, thr_error, h, y_big_step, \
-    y_small_step, x_big_step, x_small_step, estimated_error;
+    double xR, x, y, H_MIN, H_MAX, thr_error, h, y_big_step, h_old, \
+    y_small_step, x_big_step, x_small_step, estimated_error, y_small_step_inner, \
+    x_small_step_inner;
     int s, K, exiting_code, is_step_made, num_of_function;
     double (*f)(double, double, double *);
     double (*f_sol)(double, double *);
     double *additional_args_to_function;
     char path[256];
     FILE* file;
-    //Parsing args
+    //parsing args
     assert(argc>=5);
     assert(sscanf(argv[1], "%d", &num_of_function)==1);
     assert(sscanf(argv[2], "%lf", &x)==1);
@@ -30,7 +31,7 @@ int main(int argc, char *argv[]) {
     file = fopen(path, "w");
     exiting_code = 0;
     s = 4;
-    K = 32; //Use this K for the 4-th order
+    K = 32; //use this K for the 4-th order
     thr_error = 1e-4;
     H_MIN = 1e-10;
     H_MAX = xR-x;
@@ -50,8 +51,9 @@ int main(int argc, char *argv[]) {
             break;
     }
 
+    //initial point
     y = f_sol(x, additional_args_to_function);
-    fprintf(file, "%lf %lf %lf %lf \n", x, y, f_sol(x, additional_args_to_function), h);
+    fprintf(file, "%lf %lf %lf %lf \n", x, y, f_sol(x, additional_args_to_function), 0.0);
     while (x < xR) {
         if (x + h > xR) {
             h = xR - x;
@@ -73,14 +75,22 @@ int main(int argc, char *argv[]) {
         
         //two step path
         make_step(&x_small_step, &y_small_step, h/2, f, additional_args_to_function);
+        //first inner point to report
+        y_small_step_inner = y_small_step; 
+        x_small_step_inner = x_small_step; 
         make_step(&x_small_step, &y_small_step, h/2, f, additional_args_to_function);
+        
         //one step path
         make_step(&x_big_step, &y_big_step, h, f, additional_args_to_function);
 
         estimated_error = (y_big_step - y_small_step)/(pow(2, s) - 1);
+        h_old = h/2; //the size of small steps
         is_step_made = get_step(estimated_error, thr_error, K, &h, y_small_step, &y, &x);
-        if (is_step_made)
-            fprintf(file, "%.3lf %.15lf %.15lf %.6e \n", x, y, f_sol(x, additional_args_to_function), h);
+        if (is_step_made) {
+            //print two points from small steps
+            fprintf(file, "%.3lf %.15lf %.15lf %.6e \n", x_small_step_inner, y_small_step_inner, f_sol(x_small_step_inner, additional_args_to_function), h_old);
+            fprintf(file, "%.3lf %.15lf %.15lf %.6e \n", x, y, f_sol(x, additional_args_to_function), h_old);
+        }
     }
     return exiting_code;
 }
