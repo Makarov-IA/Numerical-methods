@@ -73,13 +73,15 @@ int main(int argc, char *argv[]) {
             }
             if (h > H_MAX) {
                 printf("Stop solving cause h is bigger than H_MAX\n");
+                fprintf(file, "Stop solving cause h is bigger than H_MAX\n");
                 exiting_code = 1;
-                break;
+                return exiting_code;
             }
             if (h < H_MIN) {
                 printf("Stop solving cause h is smaller than H_MIN\n");
+                fprintf(file, "Stop solving cause h is smaller than H_MIN\n");
                 exiting_code = 2;
-                break;
+                return exiting_code;
             }
             y_big_step = y;
             y_small_step = y;
@@ -122,6 +124,7 @@ int main(int argc, char *argv[]) {
             }
             if (fabs(max_diff) <1e-12) {
                 printf("Our solution exactly matches the real %d_func!\n", num_of_function);
+                fprintf(file, "Our solution exactly matches the real func!\n");
                 exiting_code = 3;
                 return exiting_code;
             }
