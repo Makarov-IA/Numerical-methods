@@ -22,6 +22,8 @@ double test_function_2 (double xn, double yn, double *additional_args_to_functio
 double test_function_sol_2 (double xn, double *additional_args_to_function);
 double test_function_3 (double xn, double yn, double *additional_args_to_function);
 double test_function_sol_3 (double xn, double *additional_args_to_function);
+double test_function_4 (double xn, double yn, double *additional_args_to_function);
+double test_function_sol_4 (double xn, double *additional_args_to_function);
 
 
 #endif

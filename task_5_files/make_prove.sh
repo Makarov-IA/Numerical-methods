@@ -1,6 +1,10 @@
 #Extremely vibecoded but do what it is supposed to do
-
 set -euo pipefail
+
+if grep -qF 'Our solution exactly matches the real func!' "data_graph/${number_of_function}_prove.txt"; then
+  exit 1
+fi
+
 
 if [[ -z "${number_of_function:-}" ]]; then
     echo "Environment variable number_of_function is not set" >&2

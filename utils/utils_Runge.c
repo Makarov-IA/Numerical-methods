@@ -86,3 +86,13 @@ double test_function_sol_3 (double xn, double *additional_args_to_function) {
     return exp(A*pow((xn-alpha),beta));
 }
 
+double test_function_4 (double xn, double yn, double *additional_args_to_function) {
+    (void) yn;
+    (void) additional_args_to_function;
+    return 5*pow(xn,4) + 4*pow(xn,3) + 3*pow(xn,2) + 2*xn + 1;
+}
+
+double test_function_sol_4 (double xn, double *additional_args_to_function) {
+    (void) additional_args_to_function;
+    return pow(xn,5) + pow(xn,4) + pow(xn,3) + pow(xn,2) + xn + 1;
+}

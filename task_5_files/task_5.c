@@ -60,6 +60,10 @@ int main(int argc, char *argv[]) {
             f = test_function_3;
             f_sol = test_function_sol_3;
             break;
+        case 4: 
+            f = test_function_4;
+            f_sol = test_function_sol_4;
+            break;
     }
 
     //initial point

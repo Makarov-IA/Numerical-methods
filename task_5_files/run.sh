@@ -1,4 +1,3 @@
-set -euo pipefail #to be conf that if it is failed it won't continue to run
 clear&&clear
 
 for is_fixed_h in {0..1}; do #if h is fixed (used to prove the oreder of method)
@@ -42,4 +41,17 @@ for is_fixed_h in {0..1}; do #if h is fixed (used to prove the oreder of method)
     else 
         number_of_function=${number_of_function} bash make_prove.sh 
     fi
+
+    number_of_function=4
+    x_init=0
+    xR=3
+    h_init=0.5
+    ./task_5 ${number_of_function} ${x_init} ${xR} ${h_init} ${is_fixed_h}
+    
+    if [ "$is_fixed_h" -eq 0 ]; then
+        number_of_function=${number_of_function} bash make_plot.sh 
+    else 
+        number_of_function=${number_of_function} bash make_prove.sh 
+    fi
+
 done
