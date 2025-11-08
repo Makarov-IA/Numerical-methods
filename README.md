@@ -5,3 +5,4 @@ Tasks for the course of numerical_methods at the university
 * Task_2 - Finding eigenvalue and eigenvectors using difference equations
 * Task_3 - as task_2, but for for another matrix
 * Task_4 - Solving basic ODE using different schemas
+* Task_5 - Solving ODE using Runge method and automatically adjusting step
