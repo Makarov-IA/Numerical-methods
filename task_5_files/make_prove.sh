@@ -1,33 +1,13 @@
-#Extremely vibecoded but do what it is supposed to do
 set -euo pipefail
 
 if grep -qF 'Our solution exactly matches the real func!' "data_graph/${number_of_function}_prove.txt"; then
   exit 1
 fi
 
-
-if [[ -z "${number_of_function:-}" ]]; then
-    echo "Environment variable number_of_function is not set" >&2
-    exit 1
-fi
-
 data_file="data_graph/${number_of_function}_prove.txt"
 plot_file="plots/${number_of_function}_prove.png"
 
-if [[ ! -f "${data_file}" ]]; then
-    echo "File ${data_file} not found" >&2
-    exit 1
-fi
-
-if ! read -r x0 y0 < "${data_file}"; then
-    echo "Cannot read first point from ${data_file}" >&2
-    exit 1
-fi
-if [[ -z "${x0:-}" || -z "${y0:-}" ]]; then
-    echo "File ${data_file} does not contain enough data" >&2
-    exit 1
-fi
-mkdir -p "$(dirname "${plot_file}")"
+read -r x0 y0 < "${data_file}"
 
 gnuplot -e "
 set term pngcairo size 1200,700 enhanced font ',14';
@@ -53,4 +33,4 @@ plot \
   2*x + a2 t 'k=2' lc rgb 'black',\
   3*x + a3 t 'k=3' lc rgb 'orange',\
   4*x + a4 t 'k=4' lc rgb 'blue';
-" 2>/dev/null
+"
