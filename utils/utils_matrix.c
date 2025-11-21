@@ -84,3 +84,38 @@ double * make_gram_matrix(double ** all_vectors, int N, int n) {
     }
     return result;
 }
+
+double * progonka(double* a, double* b, double* c, int n, double* d) {
+    
+    double *al = (double*)malloc(sizeof(double)*n);
+    double *be = (double*)malloc(sizeof(double)*n);
+    double *x  = (double*)malloc(sizeof(double)*n);
+
+    if (n == 1) {
+        x[0] = d[0] / b[0];
+        free(al); free(be);
+        return x;
+    }
+
+    al[0] = -c[0] / b[0];
+    be[0] =  d[0] / b[0];
+
+    for (int i = 1; i <= n-2; ++i) {
+        double g = b[i] + a[i-1]*al[i-1];
+        al[i] = -c[i] / g;
+        be[i] = (d[i] - a[i-1]*be[i-1]) / g;
+    }
+
+    {
+        int i = n-1;
+        double g = b[i] + a[i-1]*al[i-1];
+        be[i] = (d[i] - a[i-1]*be[i-1]) / g;
+    }
+
+    x[n-1] = be[n-1];
+    for (int i = n-2; i >= 0; --i)
+        x[i] = al[i]*x[i+1] + be[i];
+
+    free(al); free(be);
+    return x;
+}
