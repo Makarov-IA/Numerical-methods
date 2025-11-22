@@ -11,3 +11,4 @@ Tasks for the course of **numerical_methods** at the university.
 - **Task 3** – Same as Task 2, but for another matrix.  
 - **Task 4** – Solving basic ODEs using different schemas.  
 - **Task 5** – Solving ODEs using the Runge method with automatic step adjustment.
+- **Task 5** – Solving `-y''(x)+p(x)*y(x)=f(x)` with conditions `y'(0)=y'(1)=1`
