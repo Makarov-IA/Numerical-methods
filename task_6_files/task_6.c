@@ -118,6 +118,8 @@ int main(int argc, char *argv[]) {
         for (int k=0; k<N-1; k++)
             fprintf(file, "%lf %lf %lf\n", h*k, solution[k], theoretical_solution(k*h));
     }
+
+    //Метод прогонки
     if (method==2) {
         solution = progonka(a, b, c, N-1, right_part_vector);
         for (int k=0; k<N-1; k++)
