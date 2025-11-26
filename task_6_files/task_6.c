@@ -32,8 +32,8 @@ int main(int argc, char *argv[]) {
     //Парсим путь до файла, куда будем кидать точки
     if (method == 1) {
         snprintf(path, sizeof path, "data_graph/furier/%d.txt", set_number);    
-        if (set_number >= 3) {
-            fprintf(stderr, "Error: set >= 3 if for progonka\n");
+        if (set_number >=4) {
+            fprintf(stderr, "Error: set >= 4 if for progonka\n");
             free(solution);
             free(vector);
             free(right_part_vector);
@@ -71,6 +71,11 @@ int main(int argc, char *argv[]) {
             right_part = right_part_3;
             theoretical_solution = theoretical_solution_3;
             p_part = p_part_3;
+            break;
+        case 4:
+            right_part = right_part_4;
+            theoretical_solution = theoretical_solution_4;
+            p_part = p_part_4;
             break;
     }
     for (int i=0; i < N-1; i++) {
@@ -112,8 +117,14 @@ int main(int argc, char *argv[]) {
             }
             result_of_mult = multiply_vector_and_vector(vector, right_part_vector, N-1);
             norm_of_vector = multiply_vector_and_vector(vector, vector, N-1);
-            for (int i=0; i<N-1; i++) 
-                solution[i] += cos(M_PI*(k-1)*(2*i+1)/(2*N-2))*result_of_mult/norm_of_vector/lambda;
+            for (int i=0; i<N-1; i++) {
+                if (!(fabs(lambda) <= 1e-8))
+                    solution[i] += vector[i]*result_of_mult/norm_of_vector/lambda;
+                else {
+                    fprintf(stderr, "Error: lambda=0, can't find only one solution\n");
+                    exit(1);
+                }
+            }
         }
         for (int k=0; k<N-1; k++)
             fprintf(file, "%lf %lf %lf\n", h*k, solution[k], theoretical_solution(k*h));

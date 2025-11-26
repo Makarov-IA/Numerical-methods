@@ -32,16 +32,31 @@ double theoretical_solution_2 (double x) {
     return cos(M_PI * x);
 }
 
-double right_part_3 (double x) {
+double right_part_4 (double x) {
     return M_PI*M_PI * cos(M_PI * x) 
          + 2.0 * M_PI*M_PI * cos(2.0 * M_PI * x) 
          + (1.0 + x*x) * (cos(M_PI * x) + 0.5 * cos(2.0 * M_PI * x));
 }
 
-double p_part_3 (double x) {
+double p_part_4 (double x) {
     return 1 + pow(x,2);
 }
 
-double theoretical_solution_3 (double x) {
+double theoretical_solution_4 (double x) {
     return cos(M_PI*x) + 0.5*cos(2*M_PI*x);
+}
+
+double right_part_3 (double x) {
+    return (pow(M_PI,2)+1)*cos(M_PI*x);    
+}
+
+
+double p_part_3 (double x) {
+    (void) x;
+    return 0;
+}
+
+//Одно из решений
+double theoretical_solution_3 (double x) {
+    return (pow(M_PI,2) +1)/(pow(M_PI,2))*cos(M_PI * x);
 }

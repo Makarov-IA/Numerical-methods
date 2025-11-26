@@ -1,6 +1,6 @@
 #-y'' + py = f
 for method in {1..2}; do #1 - метод Фурье, 2 - метод прогонки
-    for set_number in {1..2}; do #От 1 до 2 - общие и на Фурье, и на прогонку
+    for set_number in {1..3}; do #От 1 до 2 - общие и на Фурье, и на прогонку
         N=100
         ./task_6 ${N} ${method} ${set_number}
         if [ "$method" -eq 1 ]; then
@@ -12,7 +12,7 @@ for method in {1..2}; do #1 - метод Фурье, 2 - метод прогон
 done
 
 N=1000
-set_number=3 #От 3 только на прогонку
+set_number=4 #От 4 только на прогонку
 method=2
 ./task_6 ${N} ${method} ${set_number}
 if [ "$method" -eq 1 ]; then

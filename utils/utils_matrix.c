@@ -91,6 +91,10 @@ double * progonka(double* a, double* b, double* c, int n, double* d) {
     double *be = (double*)malloc(sizeof(double)*n);
     double *x  = (double*)malloc(sizeof(double)*n);
 
+    if (fabs(b[0]) <= 1e-8) {
+        fprintf(stderr, "Error: division by 0, can't find only one solution\n");
+        exit(1);
+    }
     if (n == 1) {
         x[0] = d[0] / b[0];
         free(al); free(be);
@@ -102,6 +106,10 @@ double * progonka(double* a, double* b, double* c, int n, double* d) {
 
     for (int i = 1; i <= n-2; ++i) {
         double g = b[i] + a[i-1]*al[i-1];
+        if (fabs(g) <= 1e-8) {
+            fprintf(stderr, "Error: division by 0, can't find only one solution\n");
+            exit(1);
+        }
         al[i] = -c[i] / g;
         be[i] = (d[i] - a[i-1]*be[i-1]) / g;
     }
@@ -109,6 +117,10 @@ double * progonka(double* a, double* b, double* c, int n, double* d) {
     {
         int i = n-1;
         double g = b[i] + a[i-1]*al[i-1];
+        if (fabs(g) <= 1e-8) {
+            fprintf(stderr, "Error: division by 0, can't find only one solution\n");
+            exit(1);
+        }
         be[i] = (d[i] - a[i-1]*be[i-1]) / g;
     }
 
