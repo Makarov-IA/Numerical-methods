@@ -16,19 +16,20 @@ int main(int argc, char *argv[]) {
     int method, set_number;
     char path[256];
     FILE* file;
+    double (*right_part)(double);
+    double (*p_part)(double);
+    double (*theoretical_solution)(double);
+    double * right_part_vector, * solution, * vector, *a, *b, *c;
 
     assert(argc >= 4);
     assert(sscanf(argv[1], "%d", &N)==1);
     assert(sscanf(argv[2], "%d", &method)==1);
     assert(sscanf(argv[3], "%d", &set_number));
-    
-    double (*right_part)(double);
-    double (*p_part)(double);
-    double (*theoretical_solution)(double);
-    double * right_part_vector = (double*)malloc((N-1)*sizeof(double));
-    double * vector = (double*)malloc((N-1)*sizeof(double));
-    double * solution = (double*)malloc((N-1)*sizeof(double));
-    double *a, *b, *c;
+
+    right_part_vector = (double*)malloc((N-1)*sizeof(double));
+    vector = (double*)malloc((N-1)*sizeof(double));
+    solution = (double*)malloc((N-1)*sizeof(double));
+
     //Парсим путь до файла, куда будем кидать точки
     if (method == 1) {
         snprintf(path, sizeof path, "data_graph/furier/%d.txt", set_number);    
@@ -53,7 +54,7 @@ int main(int argc, char *argv[]) {
     file = fopen(path, "w");
 
     //В 2.91 y1=y0, yN-1=yN => y'0 = 0, y'N-1
-    h = 1.0/(N-2); // Размер шага = длина интервала/количество точке разбиения 
+    h = 1.0/(N-1); // Размер шага = длина интервала/количество точке разбиения 
 
     //Создание сета решения
     switch (set_number) {
@@ -77,9 +78,19 @@ int main(int argc, char *argv[]) {
             theoretical_solution = theoretical_solution_4;
             p_part = p_part_4;
             break;
+        case 5:
+            right_part = right_part_5;
+            theoretical_solution = theoretical_solution_5;
+            p_part = p_part_5;
+            break;
+        case 6:
+            right_part = right_part_6;
+            theoretical_solution = theoretical_solution_6;
+            p_part = p_part_6;
+            break;
     }
     for (int i=0; i < N-1; i++) {
-        right_part_vector[i] = right_part(i*h);
+        right_part_vector[i] = right_part(i*h+h/2);
     }
 
     //Создание матрицы
@@ -97,7 +108,7 @@ int main(int argc, char *argv[]) {
                 a[i] = -1/pow(h,2);
                 c[i] = -1/pow(h,2);
             }
-            b[i] += p_part(i*h);
+            b[i] += p_part(i*h+h/2);
         }
 
     }
@@ -127,14 +138,17 @@ int main(int argc, char *argv[]) {
             }
         }
         for (int k=0; k<N-1; k++)
-            fprintf(file, "%lf %lf %lf\n", h*k, solution[k], theoretical_solution(k*h));
+            fprintf(file, "%lf %lf %lf\n", +h/2+h*k, solution[k], theoretical_solution(+h/2+h*k));
     }
 
     //Метод прогонки
     if (method==2) {
-        solution = progonka(a, b, c, N-1, right_part_vector);
+        if (!(progonka(a, b, c, N-1, right_part_vector, solution) == 0)) {
+            free(a); free(b); free(c); free(solution); free(vector); free(right_part_vector);
+            exit(1);
+        }
         for (int k=0; k<N-1; k++)
-            fprintf(file, "%lf %lf %lf\n", h*k, solution[k], theoretical_solution(k*h));
+            fprintf(file, "%lf %lf %lf\n", +h/2+h*k, solution[k], theoretical_solution(+h/2+h*k));
         free(a); free(b); free(c);
     }
 

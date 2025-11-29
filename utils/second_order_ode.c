@@ -60,3 +60,31 @@ double p_part_3 (double x) {
 double theoretical_solution_3 (double x) {
     return (pow(M_PI,2) +1)/(pow(M_PI,2))*cos(M_PI * x);
 }
+
+double right_part_5 (double x) {
+    return (-2.0 + 8.0*x - 0.5*pow(x,2) - 6.0*pow(x,3) -2.5*pow(x,4) + pow(x,5))*exp(x);
+}
+
+
+double p_part_5 (double x) {
+    (void) x;
+    return 0.5 + x;
+}
+
+double theoretical_solution_5 (double x) {
+    return pow(x,2) * pow((1-x),2) * exp(x);
+}
+
+double right_part_6 (double x) {
+    return (-2.0 + 8.0*x - 0.5*pow(x,2) - 6.0*pow(x,3) -2.5*pow(x,4) + pow(x,5))*exp(x) + (-x+0.5)*(pow(x,2) * pow((1-x),2) * exp(x)); 
+}
+
+
+double p_part_6 (double x) {
+    (void) x;
+    return 1;
+}
+
+double theoretical_solution_6 (double x) {
+    return pow(x,2) * pow((1-x),2) * exp(x);
+}

@@ -7,6 +7,6 @@ void print_matrix(double* matrix, int n, int m, int limit_n, int limit_m);
 void print_vector_horizontally(double* vector, int n, int limit_n);
 double * make_gram_matrix(double ** all_vectors, int N, int n);
 double norm(double * vector, int n);
-double * progonka(double* a, double* b, double* c, int n, double* d);
+int progonka(double* a, double* b, double* c, int n, double* d, double* x);
 
 #endif

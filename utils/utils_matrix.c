@@ -12,9 +12,10 @@ double * multiply_matrix_and_vector(double* matrix, int n, int m, double* vector
     //n - число строк матрицы 
     //m - число столбцов матрицы
     //k - рамзерность вектора
-    assert(m == k);
     double row_by_column_result = 0;
     double * result = (double*)malloc(k * sizeof(double));
+    
+    assert(m == k);
 
     for (int i=0; i<n; i++) {
         row_by_column_result = 0;
@@ -85,11 +86,10 @@ double * make_gram_matrix(double ** all_vectors, int N, int n) {
     return result;
 }
 
-double * progonka(double* a, double* b, double* c, int n, double* d) {
+int progonka(double* a, double* b, double* c, int n, double* d, double* x) {
     
     double *al = (double*)malloc(sizeof(double)*n);
     double *be = (double*)malloc(sizeof(double)*n);
-    double *x  = (double*)malloc(sizeof(double)*n);
 
     if (fabs(b[0]) <= 1e-8) {
         fprintf(stderr, "Error: division by 0, can't find only one solution\n");
@@ -98,7 +98,7 @@ double * progonka(double* a, double* b, double* c, int n, double* d) {
     if (n == 1) {
         x[0] = d[0] / b[0];
         free(al); free(be);
-        return x;
+        return 0;
     }
 
     al[0] = -c[0] / b[0];
@@ -108,7 +108,7 @@ double * progonka(double* a, double* b, double* c, int n, double* d) {
         double g = b[i] + a[i-1]*al[i-1];
         if (fabs(g) <= 1e-8) {
             fprintf(stderr, "Error: division by 0, can't find only one solution\n");
-            exit(1);
+            return 1;
         }
         al[i] = -c[i] / g;
         be[i] = (d[i] - a[i-1]*be[i-1]) / g;
@@ -119,7 +119,7 @@ double * progonka(double* a, double* b, double* c, int n, double* d) {
         double g = b[i] + a[i-1]*al[i-1];
         if (fabs(g) <= 1e-8) {
             fprintf(stderr, "Error: division by 0, can't find only one solution\n");
-            exit(1);
+            return 1;
         }
         be[i] = (d[i] - a[i-1]*be[i-1]) / g;
     }
@@ -129,5 +129,5 @@ double * progonka(double* a, double* b, double* c, int n, double* d) {
         x[i] = al[i]*x[i+1] + be[i];
 
     free(al); free(be);
-    return x;
+    return 0;
 }
