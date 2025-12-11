@@ -21,6 +21,8 @@ int main(int argc, char *argv[]) {
     double (*u_theor)(double, double);
     double max_diff;
     double u_num, u_th, diff;
+    double r;
+    double *a, *b, *c, *d;
 
     assert(argc >= 6);
     assert(sscanf(argv[1], "%d", &schema_type) == 1);
@@ -57,7 +59,48 @@ int main(int argc, char *argv[]) {
         initial[i] = u0(h * i);
     }
 
-    u = solve_explicitly(initial, number_of_points_x, number_of_points_t, T, f_func, p_func);
+    if (schema_type == 1) {
+        u = solve_explicitly(initial, number_of_points_x, number_of_points_t, T, f_func, p_func);
+    } 
+    else {
+        // Неявная схема: (U^{n+1} - U^n)/tau = U_xx^{n+1} + p^{n+1} U^{n+1} + f^{n+1}
+        r = tau/(h*h);
+        a = (double*)malloc((number_of_points_x-1) * sizeof(double));
+        b = (double*)malloc(number_of_points_x * sizeof(double));
+        c = (double*)malloc((number_of_points_x-1) * sizeof(double));
+        d = (double*)malloc(number_of_points_x * sizeof(double));
+        u = (double*)malloc(number_of_points_x * number_of_points_t * sizeof(double));
+        for (int i = 0; i < number_of_points_x; i++) {
+            u[i] = initial[i];
+        }
+
+        for (int j = 1; j < number_of_points_t; j++) {
+            double t_next = j * tau;
+
+            // Левая граница
+            b[0] = 1.0 + 2.0 * r - tau * p_func(t_next, 0.0);
+            c[0] = -2.0 * r;
+            d[0] = u[(j-1)*number_of_points_x] + tau * f_func(t_next, 0.0);
+
+            // Внутренние узлы
+            for (int i = 1; i < number_of_points_x-1; i++) {
+                a[i-1] = -r;
+                b[i] = 1.0 + 2.0 * r - tau * p_func(t_next, i * h);
+                c[i] = -r;
+                d[i] = u[(j-1)*number_of_points_x + i] + tau * f_func(t_next, i * h);
+            }
+
+            // Правая граница
+            a[number_of_points_x-2] = -2.0 * r;
+            b[number_of_points_x-1] = 1.0 + 2.0 * r - tau * p_func(t_next, 1.0);
+            d[number_of_points_x-1] = u[(j-1)*number_of_points_x + number_of_points_x-1] + tau * f_func(t_next, 1.0);
+
+            // Решаем трёхдиагональную систему
+            progonka(a, b, c, number_of_points_x, d, &u[j*number_of_points_x]);
+        }
+
+        free(a); free(b); free(c); free(d);
+    }
     snprintf(path, sizeof path, "data_graph/%d.txt", set_number);
     file = fopen(path, "w");
 
@@ -74,7 +117,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("Max difference on set %d: %lf\n", set_number, max_diff);
+    printf("Max difference on set %d schema_type %d: %lf\n", set_number, schema_type, max_diff);
 
     fclose(file);
     free(initial);
