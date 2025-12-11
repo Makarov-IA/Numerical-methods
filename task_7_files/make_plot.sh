@@ -11,7 +11,7 @@ set zlabel 'u';
 set hidden3d;
 set key outside;
 
-set multiplot layout 2,2 title 'set_number=${set_number} Nx=${number_of_points_x} Nt=${number_of_points_t}' font ',14';
+set multiplot layout 2,2 title 'set\_number=${set_number} Nx=${number_of_points_x} Nt=${number_of_points_t}' font ',14';
 
 set view 60,40; splot 'data_graph/${set_number}.txt' using 2:1:(\$3) with points pt 7 ps 0.8 lc rgb 'blue' title 'u(t,x)', \
                             'data_graph/${set_number}.txt' using 2:1:(\$4+${diff}) with points pt 7 ps 0.8 lc rgb 'red' title 'theoretical (+eps)';
