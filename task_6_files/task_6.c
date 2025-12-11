@@ -33,13 +33,6 @@ int main(int argc, char *argv[]) {
     //Парсим путь до файла, куда будем кидать точки
     if (method == 1) {
         snprintf(path, sizeof path, "data_graph/furier/%d.txt", set_number);    
-        if (set_number >=4) {
-            fprintf(stderr, "Error: set >= 4 if for progonka\n");
-            free(solution);
-            free(vector);
-            free(right_part_vector);
-            exit(1);
-        }
     }
     else if (method == 2) {
         snprintf(path, sizeof path, "data_graph/progonka/%d.txt", set_number);

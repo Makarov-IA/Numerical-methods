@@ -49,6 +49,18 @@ int main(int argc, char *argv[]) {
             u0 = u0_pd_2;
             u_theor = theoretical_pd_2;
             break;
+        case 3:
+            p_func = p_pd_3;
+            f_func = f_pd_3;
+            u0 = u0_pd_3;
+            u_theor = theoretical_pd_3;
+            break;
+        case 4:
+            p_func = p_pd_4;
+            f_func = f_pd_4;
+            u0 = u0_pd_4;
+            u_theor = theoretical_pd_4;
+            break;
     }
 
     h = 1.0/(double)(number_of_points_x - 1);
