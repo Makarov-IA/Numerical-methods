@@ -10,7 +10,7 @@
 #define max(a, b) ((a) < (b) ? (b) : (a))
 
 int main(int argc, char *argv[]) {
-    int schema_type, set_number;
+    int schema_type, set_number, N;
     int number_of_points_x, number_of_points_t;
     double T;
     double h, tau, t, x;
@@ -63,26 +63,30 @@ int main(int argc, char *argv[]) {
             break;
     }
 
-    h = 1.0/(double)(number_of_points_x - 1);
+    h = 1.0/(double)(number_of_points_x - 2);
     tau = T/(double)(number_of_points_t - 1);
 
+    //Инициализируем
     initial = (double*)malloc(number_of_points_x * sizeof(double));
-    for (int i = 0; i < number_of_points_x; i++) {
-        initial[i] = u0(h * i);
+    for (int i = 1; i < number_of_points_x-1; i++) {
+        initial[i] = u0(h * i-h/2);
     }
+    initial[0] = initial[1];
+    initial[number_of_points_x-1] = initial[number_of_points_x-2];
 
     if (schema_type == 1) {
         u = solve_explicitly(initial, number_of_points_x, number_of_points_t, T, f_func, p_func);
     } 
     else {
+        N = number_of_points_x-2;
         // Неявная схема: (U^{n+1} - U^n)/tau = U_xx^{n+1} + p^{n+1} U^{n+1} + f^{n+1}
         r = tau/(h*h);
-        a = (double*)malloc((number_of_points_x-1) * sizeof(double));
-        b = (double*)malloc(number_of_points_x * sizeof(double));
-        c = (double*)malloc((number_of_points_x-1) * sizeof(double));
-        d = (double*)malloc(number_of_points_x * sizeof(double));
-        u = (double*)malloc(number_of_points_x * number_of_points_t * sizeof(double));
-        for (int i = 0; i < number_of_points_x; i++) {
+        a = (double*)malloc((N-1) * sizeof(double));
+        b = (double*)malloc(N * sizeof(double));
+        c = (double*)malloc((N-1) * sizeof(double));
+        d = (double*)malloc(N * sizeof(double));
+        u = (double*)malloc(N * number_of_points_t * sizeof(double));
+        for (int i = 0; i < N; i++) {
             u[i] = initial[i];
         }
 
@@ -90,25 +94,25 @@ int main(int argc, char *argv[]) {
             double t_next = j * tau;
 
             // Левая граница
-            b[0] = 1.0 + 2.0 * r - tau * p_func(t_next, 0.0);
+            b[0] = 1.0 + 2.0 * r - tau * p_func(t_next, h/2);
             c[0] = -2.0 * r;
-            d[0] = u[(j-1)*number_of_points_x] + tau * f_func(t_next, 0.0);
+            d[0] = u[(j-1)*N] + tau * f_func(t_next, h/2);
 
             // Внутренние узлы
-            for (int i = 1; i < number_of_points_x-1; i++) {
+            for (int i = 1; i < N-1; i++) {
                 a[i-1] = -r;
                 b[i] = 1.0 + 2.0 * r - tau * p_func(t_next, i * h);
                 c[i] = -r;
-                d[i] = u[(j-1)*number_of_points_x + i] + tau * f_func(t_next, i * h);
+                d[i] = u[(j-1)*N + i] + tau * f_func(t_next, i * h);
             }
 
             // Правая граница
-            a[number_of_points_x-2] = -2.0 * r;
-            b[number_of_points_x-1] = 1.0 + 2.0 * r - tau * p_func(t_next, 1.0);
-            d[number_of_points_x-1] = u[(j-1)*number_of_points_x + number_of_points_x-1] + tau * f_func(t_next, 1.0);
+            a[N-1] = -2.0 * r;
+            b[N-1] = 1.0 + 2.0 * r - tau * p_func(t_next, 1.0);
+            d[N-1] = u[(j-1)*N + N-1] + tau * f_func(t_next, 1.0);
 
             // Решаем трёхдиагональную систему
-            progonka(a, b, c, number_of_points_x, d, &u[j*number_of_points_x]);
+            progonka(a, b, c, N, d, &u[j*number_of_points_x+1]);
         }
 
         free(a); free(b); free(c); free(d);
@@ -119,8 +123,8 @@ int main(int argc, char *argv[]) {
     max_diff = 0.0;
     for (int j = 0; j < number_of_points_t; j++) {
         t = tau * j;
-        for (int i = 0; i < number_of_points_x; i++) {
-            x = h * i;
+        for (int i = 1; i < number_of_points_x-2; i++) {
+            x = h * i - h/2;
             u_num = u[j * number_of_points_x + i];
             u_th = u_theor(t, x);
             diff = fabs(u_num - u_th);
