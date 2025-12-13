@@ -79,40 +79,44 @@ int main(int argc, char *argv[]) {
     } 
     else {
         N = number_of_points_x-2;
-        // Неявная схема: (U^{n+1} - U^n)/tau = U_xx^{n+1} + p^{n+1} U^{n+1} + f^{n+1}
         r = tau/(h*h);
         a = (double*)malloc((N-1) * sizeof(double));
         b = (double*)malloc(N * sizeof(double));
         c = (double*)malloc((N-1) * sizeof(double));
         d = (double*)malloc(N * sizeof(double));
-        u = (double*)malloc(N * number_of_points_t * sizeof(double));
-        for (int i = 0; i < N; i++) {
+        u = (double*)malloc(number_of_points_x * number_of_points_t * sizeof(double));
+        for (int i = 0; i < number_of_points_x; i++) {
             u[i] = initial[i];
         }
 
         for (int j = 1; j < number_of_points_t; j++) {
             double t_next = j * tau;
 
-            // Левая граница
-            b[0] = 1.0 + 2.0 * r - tau * p_func(t_next, h/2);
-            c[0] = -2.0 * r;
-            d[0] = u[(j-1)*N] + tau * f_func(t_next, h/2);
+            // Левая граница (Нейман: u_x=0 -> ghost u_{-1}=u_{1})
+            b[0] = 1.0 + r - tau * p_func(t_next, h/2);
+            c[0] = -r;
+            d[0] = u[(j-1)*number_of_points_x+1] + tau * f_func(t_next, h/2);
 
             // Внутренние узлы
             for (int i = 1; i < N-1; i++) {
                 a[i-1] = -r;
-                b[i] = 1.0 + 2.0 * r - tau * p_func(t_next, i * h);
+                b[i] = 1.0 + 2.0 * r - tau * p_func(t_next, i * h+h/2);
                 c[i] = -r;
-                d[i] = u[(j-1)*N + i] + tau * f_func(t_next, i * h);
+                d[i] = u[(j-1)*number_of_points_x + 1 + i] + tau * f_func(t_next, i * h+h/2);
             }
 
-            // Правая граница
-            a[N-1] = -2.0 * r;
-            b[N-1] = 1.0 + 2.0 * r - tau * p_func(t_next, 1.0);
-            d[N-1] = u[(j-1)*N + N-1] + tau * f_func(t_next, 1.0);
+            // Правая граница (Нейман: u_N = u_{N-2})
+            a[N-2] = -r;
+            b[N-1] = 1.0 + r - tau * p_func(t_next, 1.0-h/2);
+            d[N-1] = u[(j-1)*number_of_points_x + N] + tau * f_func(t_next, 1.0 - h/2);
+
+
 
             // Решаем трёхдиагональную систему
             progonka(a, b, c, N, d, &u[j*number_of_points_x+1]);
+            u[j*number_of_points_x] = u[j*number_of_points_x + 1];
+            u[j*number_of_points_x + number_of_points_x - 1] = u[j*number_of_points_x + number_of_points_x - 2];
+
         }
 
         free(a); free(b); free(c); free(d);
