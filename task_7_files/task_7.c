@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
     if (schema_type == 1) {
         u = solve_explicitly(initial, number_of_points_x, number_of_points_t, T, f_func, p_func);
     } 
-    else {
+    else if (schema_type == 2) {
         N = number_of_points_x-2;
         r = tau/(h*h);
         a = (double*)malloc((N-1) * sizeof(double));
