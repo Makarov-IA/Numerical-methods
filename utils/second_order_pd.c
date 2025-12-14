@@ -9,7 +9,7 @@ double* solve_explicitly(double* inital_conditions, int number_of_points_x, \
     double(*f)(double, double),double(*p)(double, double)) {
 
     double tau = T/(double) (number_of_points_t-1);
-    double h = 1.0/(double) (number_of_points_x-1);
+    double h = 1.0/(double) (number_of_points_x-2);
     double hh = h*h;
     int row_prev, row_cur;
 
@@ -30,25 +30,15 @@ double* solve_explicitly(double* inital_conditions, int number_of_points_x, \
         row_prev = (j-1) * number_of_points_x;
         row_cur = j * number_of_points_x;
 
-        // Для x=0 граничное условие
-        u[row_cur] = u[row_prev] +
-            tau * ( 2.0 * (u[row_prev + 1] - u[row_prev]) / hh
-            + p(tau * j, 0.0) * u[row_prev]
-            + f(tau * j, 0.0));
-
-        // Для x=1 граничное условие
-        u[row_cur + number_of_points_x - 1] = u[row_prev + number_of_points_x - 1] +
-            tau * ( 2.0 * (u[row_prev + number_of_points_x - 2] - u[row_prev + number_of_points_x - 1]) / hh
-            + p(tau * j, 1.0) * u[row_prev + number_of_points_x - 1]
-            + f(tau * j, 1.0));
-
         // Внутренние узлы
         for (int k = 1; k < number_of_points_x - 1; k++) {
             u[row_cur + k] = u[row_prev + k] +
                 tau * ((u[row_prev + k + 1] - 2 * u[row_prev + k] + u[row_prev + k - 1]) / hh
-                + p(tau * j, k * h) * u[row_prev + k]
-                + f(tau * j, k * h));
+                + p(tau * (j-1), k * h -h/2) * u[row_prev + k]
+                + f(tau * (j-1), k * h -h/2));
         }
+        u[row_cur] = u[row_cur+1];
+        u[row_cur + number_of_points_x - 1] = u[row_cur + number_of_points_x - 2];
     }
     return u;
 }
