@@ -22,9 +22,6 @@ static double func_4(double x) {
     return t * t * exp(x);
 }
 
-static double func_5(double x) {
-    return 1.0 / (1.0 + 25.0 * x * x);
-}
 
 double (*select_function(int set_number))(double) {
     switch (set_number) {
@@ -36,8 +33,6 @@ double (*select_function(int set_number))(double) {
             return func_3;
         case 4:
             return func_4;
-        case 5:
-            return func_5;
         default:
             return NULL;
     }
@@ -85,40 +80,18 @@ void fill_vandermonde(double *matrix, const double *nodes, int n) {
 }
 
 int solve_linear_system(double *matrix, double *rhs, double *solution, int n) {
-    const double pivot_eps = 1e-30;
-    double *scale = (double *)malloc(n * sizeof(double));
-    if (!scale) {
-        return 1;
-    }
-
-    for (int i = 0; i < n; ++i) {
-        double row_max = 0.0;
-        for (int j = 0; j < n; ++j) {
-            double val = fabs(matrix[i * n + j]);
-            if (val > row_max) {
-                row_max = val;
-            }
-        }
-        if (row_max < pivot_eps) {
-            free(scale);
-            return 1;
-        }
-        scale[i] = row_max;
-    }
-
     for (int i = 0; i < n; ++i) {
         int pivot = i;
-        double max_ratio = fabs(matrix[i * n + i]) / scale[i];
+        double max_val = fabs(matrix[i * n + i]);
         for (int r = i + 1; r < n; ++r) {
-            double ratio = fabs(matrix[r * n + i]) / scale[r];
-            if (ratio > max_ratio) {
-                max_ratio = ratio;
+            double val = fabs(matrix[r * n + i]);
+            if (val > max_val) {
+                max_val = val;
                 pivot = r;
             }
         }
 
-        if (fabs(matrix[pivot * n + i]) < pivot_eps) {
-            free(scale);
+        if (max_val < 1e-18) {
             return 1;
         }
 
@@ -132,11 +105,6 @@ int solve_linear_system(double *matrix, double *rhs, double *solution, int n) {
                 double tmp = rhs[i];
                 rhs[i] = rhs[pivot];
                 rhs[pivot] = tmp;
-            }
-            {
-                double tmp = scale[i];
-                scale[i] = scale[pivot];
-                scale[pivot] = tmp;
             }
         }
 
@@ -155,14 +123,12 @@ int solve_linear_system(double *matrix, double *rhs, double *solution, int n) {
         for (int c = i + 1; c < n; ++c) {
             sum -= matrix[i * n + c] * solution[c];
         }
-        if (fabs(matrix[i * n + i]) < pivot_eps) {
-            free(scale);
+        if (fabs(matrix[i * n + i]) < 1e-18) {
             return 1;
         }
         solution[i] = sum / matrix[i * n + i];
     }
 
-    free(scale);
     return 0;
 }
 
@@ -174,69 +140,45 @@ double eval_polynomial(const double *coeff, int n, double x) {
     return result;
 }
 
-void fill_barycentric_weights(const double *nodes, double *weights, int n) {
+double eval_lagrange_simple(const double *nodes, const double *values, int n, double x) {
+    double result = 0.0;
+
     for (int i = 0; i < n; ++i) {
-        double w = 1.0;
+        double li = 1.0;
         for (int j = 0; j < n; ++j) {
             if (i == j) {
                 continue;
             }
-            w /= (nodes[i] - nodes[j]);
+            li *= (x - nodes[j]) / (nodes[i] - nodes[j]);
         }
-        weights[i] = w;
-    }
-}
-
-double eval_lagrange_barycentric(const double *nodes, const double *values,
-                                 const double *weights, int n, double x) {
-    double numerator = 0.0;
-    double denominator = 0.0;
-
-    for (int i = 0; i < n; ++i) {
-        double diff = x - nodes[i];
-        if (fabs(diff) < EPS) {
-            return values[i];
-        }
-        double term = weights[i] / diff;
-        numerator += term * values[i];
-        denominator += term;
+        result += values[i] * li;
     }
 
-    return numerator / denominator;
-}
-
-static double map_to_reference(double x, double a, double b) {
-    return (2.0 * x - (a + b)) / (b - a);
+    return result;
 }
 
 static int prepare_interpolation(double (*func)(double), const double *nodes, int n_nodes,
-                                 double a, double b,
-                                 double **values_out, double **coeff_out, double **weights_out) {
+                                 double **values_out, double **coeff_out) {
     double *values = (double *)malloc(n_nodes * sizeof(double));
     double *matrix = (double *)malloc(n_nodes * n_nodes * sizeof(double));
     double *rhs = (double *)malloc(n_nodes * sizeof(double));
     double *coeff = (double *)malloc(n_nodes * sizeof(double));
-    double *weights = (double *)malloc(n_nodes * sizeof(double));
-    double *scaled_nodes = (double *)malloc(n_nodes * sizeof(double));
 
-    if (!values || !matrix || !rhs || !coeff || !weights || !scaled_nodes) {
+    if (!values || !matrix || !rhs || !coeff) {
         fprintf(stderr, "Error: memory allocation failed\n");
         free(values);
         free(matrix);
         free(rhs);
         free(coeff);
-        free(weights);
-        free(scaled_nodes);
         return 1;
     }
 
     for (int i = 0; i < n_nodes; ++i) {
         values[i] = func(nodes[i]);
         rhs[i] = values[i];
-        scaled_nodes[i] = map_to_reference(nodes[i], a, b);
     }
 
-    fill_vandermonde(matrix, scaled_nodes, n_nodes);
+    fill_vandermonde(matrix, nodes, n_nodes);
 
     if (solve_linear_system(matrix, rhs, coeff, n_nodes) != 0) {
         fprintf(stderr, "Error: system is singular or ill-conditioned\n");
@@ -244,20 +186,14 @@ static int prepare_interpolation(double (*func)(double), const double *nodes, in
         free(matrix);
         free(rhs);
         free(coeff);
-        free(weights);
-        free(scaled_nodes);
         return 1;
     }
 
-    fill_barycentric_weights(nodes, weights, n_nodes);
-
     free(matrix);
     free(rhs);
-    free(scaled_nodes);
 
     *values_out = values;
     *coeff_out = coeff;
-    *weights_out = weights;
     return 0;
 }
 
@@ -265,9 +201,8 @@ void print_table(const char *title, double (*func)(double),
                  const double *nodes, int n_nodes, int n_eval, double a, double b) {
     double *values = NULL;
     double *coeff = NULL;
-    double *weights = NULL;
 
-    if (prepare_interpolation(func, nodes, n_nodes, a, b, &values, &coeff, &weights) != 0) {
+    if (prepare_interpolation(func, nodes, n_nodes, &values, &coeff) != 0) {
         return;
     }
 
@@ -277,8 +212,8 @@ void print_table(const char *title, double (*func)(double),
     if (n_eval == 1) {
         double x = a;
         double exact = func(x);
-        double approx_slae = eval_polynomial(coeff, n_nodes, map_to_reference(x, a, b));
-        double approx_lagrange = eval_lagrange_barycentric(nodes, values, weights, n_nodes, x);
+        double approx_slae = eval_polynomial(coeff, n_nodes, x);
+        double approx_lagrange = eval_lagrange_simple(nodes, values, n_nodes, x);
         printf("%12.6f %22.12e %22.12e %22.12e %22.12e\n",
                x, exact, approx_slae, approx_lagrange, fabs(approx_slae - approx_lagrange));
     } else {
@@ -286,8 +221,8 @@ void print_table(const char *title, double (*func)(double),
         for (int i = 0; i < n_eval; ++i) {
             double x = a + step * (double)i;
             double exact = func(x);
-            double approx_slae = eval_polynomial(coeff, n_nodes, map_to_reference(x, a, b));
-            double approx_lagrange = eval_lagrange_barycentric(nodes, values, weights, n_nodes, x);
+            double approx_slae = eval_polynomial(coeff, n_nodes, x);
+            double approx_lagrange = eval_lagrange_simple(nodes, values, n_nodes, x);
             printf("%12.6f %22.12e %22.12e %22.12e %22.12e\n",
                    x, exact, approx_slae, approx_lagrange, fabs(approx_slae - approx_lagrange));
         }
@@ -297,7 +232,6 @@ void print_table(const char *title, double (*func)(double),
 
     free(values);
     free(coeff);
-    free(weights);
 }
 
 int write_table_data(const char *path, double (*func)(double),
@@ -310,8 +244,7 @@ int write_table_data(const char *path, double (*func)(double),
 
     double *values = NULL;
     double *coeff = NULL;
-    double *weights = NULL;
-    if (prepare_interpolation(func, nodes, n_nodes, a, b, &values, &coeff, &weights) != 0) {
+    if (prepare_interpolation(func, nodes, n_nodes, &values, &coeff) != 0) {
         fclose(file);
         return 1;
     }
@@ -319,8 +252,8 @@ int write_table_data(const char *path, double (*func)(double),
     if (n_eval == 1) {
         double x = a;
         double exact = func(x);
-        double approx_slae = eval_polynomial(coeff, n_nodes, map_to_reference(x, a, b));
-        double approx_lagrange = eval_lagrange_barycentric(nodes, values, weights, n_nodes, x);
+        double approx_slae = eval_polynomial(coeff, n_nodes, x);
+        double approx_lagrange = eval_lagrange_simple(nodes, values, n_nodes, x);
         fprintf(file, "%.10f %.15e %.15e %.15e %.15e\n",
                 x, exact, approx_slae, approx_lagrange, fabs(approx_slae - approx_lagrange));
     } else {
@@ -328,8 +261,8 @@ int write_table_data(const char *path, double (*func)(double),
         for (int i = 0; i < n_eval; ++i) {
             double x = a + step * (double)i;
             double exact = func(x);
-            double approx_slae = eval_polynomial(coeff, n_nodes, map_to_reference(x, a, b));
-            double approx_lagrange = eval_lagrange_barycentric(nodes, values, weights, n_nodes, x);
+            double approx_slae = eval_polynomial(coeff, n_nodes, x);
+            double approx_lagrange = eval_lagrange_simple(nodes, values, n_nodes, x);
             fprintf(file, "%.10f %.15e %.15e %.15e %.15e\n",
                     x, exact, approx_slae, approx_lagrange, fabs(approx_slae - approx_lagrange));
         }
@@ -337,7 +270,6 @@ int write_table_data(const char *path, double (*func)(double),
 
     free(values);
     free(coeff);
-    free(weights);
     fclose(file);
     return 0;
 }

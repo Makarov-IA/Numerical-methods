@@ -67,12 +67,13 @@ def main():
 
     xs, exact, slae, lagrange, _diff = read_table(table_path)
     nx, ny = read_nodes(nodes_path)
-
     plt.figure(figsize=(10, 6))
     plt.plot(xs, exact, label="Exact", linewidth=2)
     plt.plot(xs, slae, label="SLAE", linewidth=2, linestyle="--")
     plt.plot(xs, lagrange, label="Lagrange", linewidth=2, linestyle=":")
     plt.scatter(nx, ny, label="Nodes", s=24, zorder=3)
+    plt.ylim(min(exact) - 0.1, max(exact) + 0.1)
+    plt.xlim(min(xs) - 0.1, max(xs) + 0.1)
     plt.title(f"Interpolation: set {args.set} ({args.nodes} nodes)")
     plt.xlabel("x")
     plt.ylabel("y")

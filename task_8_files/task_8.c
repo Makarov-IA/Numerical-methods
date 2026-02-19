@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     }
 
     //Хардкод выбора отрезка построения
-    if (set_number == 5) {
+    if (set_number == 1) {
         a = -1.0;
         b = 1.0;
     } else {
@@ -32,7 +32,8 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Function %d: %s\n", set_number, select_function_name(set_number));
-    printf("Interval [%.2f, %.2f], nodes=%d, eval_points=%d\n\n", a, b, n_nodes, n_eval);
+    printf("Interval [%.2f, %.2f], nodes=%d, eval_points=%d\n\n",
+           a, b, n_nodes, n_eval);
 
     double *nodes = (double *)malloc(n_nodes * sizeof(double));
     char path[256];

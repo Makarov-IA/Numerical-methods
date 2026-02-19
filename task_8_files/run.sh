@@ -1,13 +1,13 @@
 clear && clear
 
-n_nodes=150
-n_eval=1000
+n_nodes=50
+n_eval=150
 
 mkdir -p data_graph data_plot plots
 
 show_plots=0     # 1 - show interactive windows, 0 - save only
 
-for set_number in 1 2 3 4 5; do
+for set_number in 1 2 3 4; do
     ./task_8 ${set_number} ${n_nodes} ${n_eval} > data_graph/set_${set_number}_n${n_nodes}.txt
     echo "Saved data_graph/set_${set_number}_n${n_nodes}.txt"
 
