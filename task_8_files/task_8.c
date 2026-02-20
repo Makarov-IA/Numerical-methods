@@ -39,18 +39,15 @@ int main(int argc, char *argv[]) {
     char path[256];
 
     fill_uniform_nodes(nodes, n_nodes, a, b);
-    print_table("Uniform nodes", func, nodes, n_nodes, n_eval, a, b);
+    char nodes_path[256];
     snprintf(path, sizeof path, "data_plot/set_%d_uniform.txt", set_number);
-    write_table_data(path, func, nodes, n_nodes, n_eval, a, b);
-    snprintf(path, sizeof path, "data_plot/set_%d_uniform_nodes.txt", set_number);
-    write_nodes_data(path, func, nodes, n_nodes);
+    snprintf(nodes_path, sizeof nodes_path, "data_plot/set_%d_uniform_nodes.txt", set_number);
+    print_tables("Uniform nodes", func, nodes, n_nodes, n_eval, a, b, path, nodes_path);
 
     fill_chebyshev_nodes(nodes, n_nodes, a, b);
-    print_table("Chebyshev nodes", func, nodes, n_nodes, n_eval, a, b);
     snprintf(path, sizeof path, "data_plot/set_%d_chebyshev.txt", set_number);
-    write_table_data(path, func, nodes, n_nodes, n_eval, a, b);
-    snprintf(path, sizeof path, "data_plot/set_%d_chebyshev_nodes.txt", set_number);
-    write_nodes_data(path, func, nodes, n_nodes);
+    snprintf(nodes_path, sizeof nodes_path, "data_plot/set_%d_chebyshev_nodes.txt", set_number);
+    print_tables("Chebyshev nodes", func, nodes, n_nodes, n_eval, a, b, path, nodes_path);
 
     free(nodes);
 

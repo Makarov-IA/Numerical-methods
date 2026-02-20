@@ -1,12 +1,7 @@
 import argparse
 import os
 import sys
-
-try:
-    import matplotlib.pyplot as plt
-except Exception as exc:
-    print(f"Error: matplotlib is required ({exc})")
-    sys.exit(1)
+import matplotlib.pyplot as plt
 
 
 def read_table(path):
@@ -15,17 +10,12 @@ def read_table(path):
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if not line:
-                continue
             parts = line.split()
-            if len(parts) < 4:
-                continue
             xs.append(float(parts[0]))
             exact.append(float(parts[1]))
             slae.append(float(parts[2]))
             lagrange.append(float(parts[3]))
-            if len(parts) >= 5:
-                diff.append(float(parts[4]))
+            diff.append(float(parts[4]))
     return xs, exact, slae, lagrange, diff
 
 
@@ -34,11 +24,7 @@ def read_nodes(path):
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if not line:
-                continue
             parts = line.split()
-            if len(parts) < 2:
-                continue
             xs.append(float(parts[0]))
             ys.append(float(parts[1]))
     return xs, ys
@@ -58,15 +44,9 @@ def main():
     table_path = os.path.join(args.data_dir, f"set_{args.set}_{args.nodes}.txt")
     nodes_path = os.path.join(args.data_dir, f"set_{args.set}_{args.nodes}_nodes.txt")
 
-    if not os.path.exists(table_path):
-        print(f"Error: {table_path} not found")
-        sys.exit(1)
-    if not os.path.exists(nodes_path):
-        print(f"Error: {nodes_path} not found")
-        sys.exit(1)
-
     xs, exact, slae, lagrange, _diff = read_table(table_path)
     nx, ny = read_nodes(nodes_path)
+
     plt.figure(figsize=(10, 6))
     plt.plot(xs, exact, label="Exact", linewidth=2)
     plt.plot(xs, slae, label="SLAE", linewidth=2, linestyle="--")

@@ -5,6 +5,7 @@
 
 #define EPS 1e-12
 
+//Тестовый сет
 static double func_1(double x) {
     return 1.0 / (1.0 + 25.0 * x * x);
 }
@@ -22,7 +23,7 @@ static double func_4(double x) {
     return t * t * exp(x);
 }
 
-
+//Выбор тестовой функции
 double (*select_function(int set_number))(double) {
     switch (set_number) {
         case 1:
@@ -38,6 +39,7 @@ double (*select_function(int set_number))(double) {
     }
 }
 
+//Возвращает имя тест функции для принта в таблицу
 const char *select_function_name(int set_number) {
     switch (set_number) {
         case 1:
@@ -55,6 +57,7 @@ const char *select_function_name(int set_number) {
     }
 }
 
+//равномерная сетка 
 void fill_uniform_nodes(double *nodes, int n, double a, double b) {
     double h = (b - a) / (double)(n - 1);
     for (int i = 0; i < n; ++i) {
@@ -62,6 +65,7 @@ void fill_uniform_nodes(double *nodes, int n, double a, double b) {
     }
 }
 
+//чебышевская сетка
 void fill_chebyshev_nodes(double *nodes, int n, double a, double b) {
     for (int i = 0; i < n; ++i) {
         double t = cos(M_PI * (2.0 * (double)i + 1.0) / (2.0 * (double)n));
@@ -69,6 +73,7 @@ void fill_chebyshev_nodes(double *nodes, int n, double a, double b) {
     }
 }
 
+//Заполняем матрицу для решения через СЛАУ
 void fill_vandermonde(double *matrix, const double *nodes, int n) {
     for (int i = 0; i < n; ++i) {
         double power = 1.0;
@@ -79,8 +84,11 @@ void fill_vandermonde(double *matrix, const double *nodes, int n) {
     }
 }
 
+//Простая решалка линейной системы Гауссом с выбором максимального по столбцу для численной стабильности
 int solve_linear_system(double *matrix, double *rhs, double *solution, int n) {
+    //Прямой ход
     for (int i = 0; i < n; ++i) {
+        //Выбор максимального по столбцу
         int pivot = i;
         double max_val = fabs(matrix[i * n + i]);
         for (int r = i + 1; r < n; ++r) {
@@ -118,6 +126,7 @@ int solve_linear_system(double *matrix, double *rhs, double *solution, int n) {
         }
     }
 
+    //Обратный ход
     for (int i = n - 1; i >= 0; --i) {
         double sum = rhs[i];
         for (int c = i + 1; c < n; ++c) {
@@ -132,6 +141,7 @@ int solve_linear_system(double *matrix, double *rhs, double *solution, int n) {
     return 0;
 }
 
+//Вычисляем полином из коэффициентов
 double eval_polynomial(const double *coeff, int n, double x) {
     double result = coeff[n - 1];
     for (int i = n - 2; i >= 0; --i) {
@@ -140,7 +150,8 @@ double eval_polynomial(const double *coeff, int n, double x) {
     return result;
 }
 
-double eval_lagrange_simple(const double *nodes, const double *values, int n, double x) {
+//Считаем коэффициента для Лагранжа
+double eval_lagrange(const double *nodes, const double *values, int n, double x) {
     double result = 0.0;
 
     for (int i = 0; i < n; ++i) {
@@ -157,21 +168,13 @@ double eval_lagrange_simple(const double *nodes, const double *values, int n, do
     return result;
 }
 
-static int prepare_interpolation(double (*func)(double), const double *nodes, int n_nodes,
+//Пайплайн поиска коэффициентов через решение СЛАУ
+int prepare_interpolation(double (*func)(double), const double *nodes, int n_nodes,
                                  double **values_out, double **coeff_out) {
     double *values = (double *)malloc(n_nodes * sizeof(double));
     double *matrix = (double *)malloc(n_nodes * n_nodes * sizeof(double));
     double *rhs = (double *)malloc(n_nodes * sizeof(double));
     double *coeff = (double *)malloc(n_nodes * sizeof(double));
-
-    if (!values || !matrix || !rhs || !coeff) {
-        fprintf(stderr, "Error: memory allocation failed\n");
-        free(values);
-        free(matrix);
-        free(rhs);
-        free(coeff);
-        return 1;
-    }
 
     for (int i = 0; i < n_nodes; ++i) {
         values[i] = func(nodes[i]);
@@ -197,96 +200,45 @@ static int prepare_interpolation(double (*func)(double), const double *nodes, in
     return 0;
 }
 
-void print_table(const char *title, double (*func)(double),
-                 const double *nodes, int n_nodes, int n_eval, double a, double b) {
+
+int print_tables(const char *title, double (*func)(double),
+                 const double *nodes, int n_nodes, int n_eval,
+                 double a, double b, const char *table_path,
+                 const char *nodes_path) {
     double *values = NULL;
     double *coeff = NULL;
+    FILE *file = NULL;
+    FILE *nodes_file = NULL;
 
-    if (prepare_interpolation(func, nodes, n_nodes, &values, &coeff) != 0) {
-        return;
-    }
+    prepare_interpolation(func, nodes, n_nodes, &values, &coeff);
+
+    file = fopen(table_path, "w");
+    nodes_file = fopen(nodes_path, "w");
 
     printf("%s\n", title);
-    printf("%12s %22s %22s %22s %22s\n", "x", "exact", "SLAE", "Lagrange", "diff");
+    printf("%12s %22s %22s %22s %22s\n", "x", "exact", "P_n", "L_(n-1)", "diff");
 
-    if (n_eval == 1) {
-        double x = a;
+    
+    double step = (b - a) / (double)(n_eval - 1);
+    for (int i = 0; i < n_eval; ++i) {
+        double x = a + step * (double)i;
         double exact = func(x);
         double approx_slae = eval_polynomial(coeff, n_nodes, x);
-        double approx_lagrange = eval_lagrange_simple(nodes, values, n_nodes, x);
+        double approx_lagrange = eval_lagrange(nodes, values, n_nodes, x);
         printf("%12.6f %22.12e %22.12e %22.12e %22.12e\n",
-               x, exact, approx_slae, approx_lagrange, fabs(approx_slae - approx_lagrange));
-    } else {
-        double step = (b - a) / (double)(n_eval - 1);
-        for (int i = 0; i < n_eval; ++i) {
-            double x = a + step * (double)i;
-            double exact = func(x);
-            double approx_slae = eval_polynomial(coeff, n_nodes, x);
-            double approx_lagrange = eval_lagrange_simple(nodes, values, n_nodes, x);
-            printf("%12.6f %22.12e %22.12e %22.12e %22.12e\n",
-                   x, exact, approx_slae, approx_lagrange, fabs(approx_slae - approx_lagrange));
-        }
-    }
-
-    printf("\n");
-
-    free(values);
-    free(coeff);
-}
-
-int write_table_data(const char *path, double (*func)(double),
-                     const double *nodes, int n_nodes, int n_eval, double a, double b) {
-    FILE *file = fopen(path, "w");
-    if (!file) {
-        fprintf(stderr, "Error: can't open %s\n", path);
-        return 1;
-    }
-
-    double *values = NULL;
-    double *coeff = NULL;
-    if (prepare_interpolation(func, nodes, n_nodes, &values, &coeff) != 0) {
-        fclose(file);
-        return 1;
-    }
-
-    if (n_eval == 1) {
-        double x = a;
-        double exact = func(x);
-        double approx_slae = eval_polynomial(coeff, n_nodes, x);
-        double approx_lagrange = eval_lagrange_simple(nodes, values, n_nodes, x);
-        fprintf(file, "%.10f %.15e %.15e %.15e %.15e\n",
                 x, exact, approx_slae, approx_lagrange, fabs(approx_slae - approx_lagrange));
-    } else {
-        double step = (b - a) / (double)(n_eval - 1);
-        for (int i = 0; i < n_eval; ++i) {
-            double x = a + step * (double)i;
-            double exact = func(x);
-            double approx_slae = eval_polynomial(coeff, n_nodes, x);
-            double approx_lagrange = eval_lagrange_simple(nodes, values, n_nodes, x);
-            fprintf(file, "%.10f %.15e %.15e %.15e %.15e\n",
-                    x, exact, approx_slae, approx_lagrange, fabs(approx_slae - approx_lagrange));
-        }
-    }
+        fprintf(file, "%.20f %.20f %.20f %.20f %.20f\n",
+                x, exact, approx_slae, approx_lagrange, fabs(approx_slae - approx_lagrange));
 
-    free(values);
-    free(coeff);
-    fclose(file);
-    return 0;
-}
-
-int write_nodes_data(const char *path, double (*func)(double),
-                     const double *nodes, int n_nodes) {
-    FILE *file = fopen(path, "w");
-    if (!file) {
-        fprintf(stderr, "Error: can't open %s\n", path);
-        return 1;
     }
 
     for (int i = 0; i < n_nodes; ++i) {
-        double x = nodes[i];
-        fprintf(file, "%.10f %.15e\n", x, func(x));
+        fprintf(nodes_file, "%.20f %.20f\n", nodes[i], values[i]);
     }
-
+    
+    fclose(nodes_file);
     fclose(file);
+    free(values);
+    free(coeff);
     return 0;
 }
