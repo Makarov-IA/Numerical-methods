@@ -6,7 +6,7 @@ seed=42
 
 mkdir -p data_graph data_plot plots
 
-show_plots=0   # 1 - show interactive windows, 0 - save only
+show_plots=1   # 1 - show interactive windows, 0 - save only
 
 for set_number in ${set_numbers}; do
     if [ "${set_number}" = "1" ] || [ "${set_number}" = "3" ]; then
@@ -23,7 +23,6 @@ for set_number in ${set_numbers}; do
     for nodes_type in uniform chebyshev random; do
         cp "data_plot/${nodes_type}.txt" "data_plot/set_${set_number}_n${n_nodes}_${nodes_type}.txt"
         cp "data_plot/${nodes_type}_nodes.txt" "data_plot/set_${set_number}_n${n_nodes}_${nodes_type}_nodes.txt"
-
         save_path="plots/set_${set_number}_n${n_nodes}_${nodes_type}.png"
         if python3 plot.py --nodes "${nodes_type}" --save "${save_path}" $( [ ${show_plots} -eq 1 ] && echo --show ); then
             echo "Saved ${save_path}"
@@ -32,3 +31,5 @@ for set_number in ${set_numbers}; do
         fi
     done
 done
+
+rm -rf data_plot
