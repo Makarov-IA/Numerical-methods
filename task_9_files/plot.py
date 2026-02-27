@@ -76,7 +76,7 @@ def main():
         marker="^",
         markersize=3,
     )
-    ax1.scatter(nx, ny, label="nodes", s=28, zorder=3)
+    ax1.scatter(nx, ny, label="nodes", s=40, zorder=3)
     ax1.set_ylabel("value")
     ax1.set_title(f"Task 9 interpolation ({args.nodes} nodes)")
     ax1.grid(True)

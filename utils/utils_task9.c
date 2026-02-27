@@ -17,6 +17,13 @@ typedef struct {
     NodeType type;
 } NodeConfig;
 
+typedef struct {
+    const char *name;
+    const char *derivative_name;
+    double (*func)(double);
+    double (*derivative)(double);
+} TestFunctionConfig;
+
 static const NodeConfig NODE_CONFIGS[] = {
     {"uniform", NODES_UNIFORM},
     {"chebyshev", NODES_CHEBYSHEV},
@@ -35,13 +42,84 @@ static int cmp_double(const void *lhs, const void *rhs) {
     return 0;
 }
 
-static double target_function(double x) {
+static double func_1(double x) {
     return 1.0 / (1.0 + 25.0 * x * x);
 }
 
-static double target_derivative(double x) {
+static double dfunc_1(double x) {
     const double den = 1.0 + 25.0 * x * x;
     return -50.0 * x / (den * den);
+}
+
+static double func_2(double x) {
+    return sin(2.0 * M_PI * x);
+}
+
+static double dfunc_2(double x) {
+    return 2.0 * M_PI * cos(2.0 * M_PI * x);
+}
+
+static double func_3(double x) {
+    return exp(x);
+}
+
+static double dfunc_3(double x) {
+    return exp(x);
+}
+
+static double func_4(double x) {
+    const double t = x * (1.0 - x);
+    return t * t * exp(x);
+}
+
+static double dfunc_4(double x) {
+    const double t = x * (1.0 - x);
+    const double dt = 1.0 - 2.0 * x;
+    const double g = t * t;
+    const double dg = 2.0 * t * dt;
+    return (dg + g) * exp(x);
+}
+
+static double func_5(double x) {
+    return cos(6.0 * M_PI * x);
+}
+
+static double dfunc_5(double x) {
+    return -6.0 * M_PI * sin(6.0 * M_PI * x);
+}
+
+static double func_6(double x) {
+    return log(1.0 + x);
+}
+
+static double dfunc_6(double x) {
+    return 1.0 / (1.0 + x);
+}
+
+static double func_7(double x) {
+    return sqrt(1.0 + x);
+}
+
+static double dfunc_7(double x) {
+    return 1.0 / (2.0 * sqrt(1.0 + x));
+}
+
+static const TestFunctionConfig *select_test_function(int set_number) {
+    static const TestFunctionConfig configs[] = {
+        {"1/(1+25*x^2)", "-50*x/(1+25*x^2)^2", func_1, dfunc_1},
+        {"sin(2*pi*x)", "2*pi*cos(2*pi*x)", func_2, dfunc_2},
+        {"exp(x)", "exp(x)", func_3, dfunc_3},
+        {"x^2*(1-x)^2*exp(x)", "exp(x)*(2*x*(1-x)*(1-2*x)+x^2*(1-x)^2)", func_4, dfunc_4},
+        {"cos(6*pi*x)", "-6*pi*sin(6*pi*x)", func_5, dfunc_5},
+        {"log(1+x)", "1/(1+x)", func_6, dfunc_6},
+        {"sqrt(1+x)", "1/(2*sqrt(1+x))", func_7, dfunc_7},
+    };
+
+    if (set_number < 1 || set_number > (int)(sizeof(configs) / sizeof(configs[0]))) {
+        return NULL;
+    }
+
+    return &configs[set_number - 1];
 }
 
 static int fill_random_nodes(double *nodes, int n, double a, double b) {
@@ -145,7 +223,8 @@ static int fill_nodes_for_case(const NodeConfig *config, double *nodes, int n_no
     return fill_random_nodes(nodes, n_nodes, a, b);
 }
 
-static int run_case(const NodeConfig *config, int n_nodes, double a, double b, unsigned int seed) {
+static int run_case(const TestFunctionConfig *test, const NodeConfig *config,
+                    int n_nodes, double a, double b, unsigned int seed) {
     double *nodes = NULL;
     double *values = NULL;
     double *deriv = NULL;
@@ -184,8 +263,8 @@ static int run_case(const NodeConfig *config, int n_nodes, double a, double b, u
     }
 
     for (int i = 0; i < n_nodes; ++i) {
-        values[i] = target_function(nodes[i]);
-        deriv[i] = target_derivative(nodes[i]);
+        values[i] = test->func(nodes[i]);
+        deriv[i] = test->derivative(nodes[i]);
         rhs[i] = values[i];
     }
 
@@ -217,7 +296,7 @@ static int run_case(const NodeConfig *config, int n_nodes, double a, double b, u
 
     for (int i = 0; i < actual_cmp; ++i) {
         const double x = cmp_points[i];
-        const double fx = target_function(x);
+        const double fx = test->func(x);
         const double px = eval_polynomial(coeff, n_nodes, x);
         const double hx = eval_hermite_piecewise(nodes, values, deriv, coeff_a, coeff_b, n_nodes, x);
         const double en = fabs(px - hx);
@@ -255,7 +334,14 @@ cleanup:
     return status;
 }
 
-int task9_run(int n_nodes, double a, double b, unsigned int seed) {
+int task9_run_for_set(int set_number, int n_nodes, double a, double b, unsigned int seed) {
+    const TestFunctionConfig *test = select_test_function(set_number);
+
+    if (!test) {
+        fprintf(stderr, "Error: incorrect set_number=%d (expected 1..7)\n", set_number);
+        return 1;
+    }
+
     if (n_nodes < 2) {
         fprintf(stderr, "Error: n_nodes must be >= 2\n");
         return 1;
@@ -264,17 +350,26 @@ int task9_run(int n_nodes, double a, double b, unsigned int seed) {
         fprintf(stderr, "Error: require a < b\n");
         return 1;
     }
+    if ((set_number == 6 || set_number == 7) && a <= -1.0) {
+        fprintf(stderr, "Error: for set %d require interval with a > -1\n", set_number);
+        return 1;
+    }
 
-    printf("Function: f(x) = 1/(1+25*x^2)\n");
-    printf("Derivative: f'(x) = -50*x/(1+25*x^2)^2\n");
+    printf("Set %d\n", set_number);
+    printf("Function: f(x) = %s\n", test->name);
+    printf("Derivative: f'(x) = %s\n", test->derivative_name);
     printf("Interval [%.6f, %.6f], nodes=%d, seed=%u\n\n", a, b, n_nodes, seed);
 
     const size_t n_cases = sizeof(NODE_CONFIGS) / sizeof(NODE_CONFIGS[0]);
     for (size_t i = 0; i < n_cases; ++i) {
-        if (run_case(&NODE_CONFIGS[i], n_nodes, a, b, seed) != 0) {
+        if (run_case(test, &NODE_CONFIGS[i], n_nodes, a, b, seed) != 0) {
             return 1;
         }
     }
 
     return 0;
+}
+
+int task9_run(int n_nodes, double a, double b, unsigned int seed) {
+    return task9_run_for_set(1, n_nodes, a, b, seed);
 }

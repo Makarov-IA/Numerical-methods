@@ -3,6 +3,7 @@
 #include "../utils/utils_task9.h"
 
 int main(int argc, char *argv[]) {
+    int set_number = 1;
     int n_nodes = 0;
     double a = 0.0;
     double b = 0.0;
@@ -15,6 +16,9 @@ int main(int argc, char *argv[]) {
     if (argc >= 5) {
         assert(sscanf(argv[4], "%u", &seed) == 1);
     }
+    if (argc >= 6) {
+        assert(sscanf(argv[5], "%d", &set_number) == 1);
+    }
 
-    return task9_run(n_nodes, a, b, seed);
+    return task9_run_for_set(set_number, n_nodes, a, b, seed);
 }
