@@ -150,7 +150,7 @@ double eval_polynomial(const double *coeff, int n, double x) {
     return result;
 }
 
-//Считаем коэффициента для Лагранжа
+//Считаем через лагранжа
 double eval_lagrange(const double *nodes, const double *values, int n, double x) {
     double result = 0.0;
 
@@ -160,7 +160,7 @@ double eval_lagrange(const double *nodes, const double *values, int n, double x)
             if (i == j) {
                 continue;
             }
-            li *= (x - nodes[j]) / (nodes[i] - nodes[j]);
+            li *= (x - nodes[j]) / (nodes[i] - nodes[j] + 1e-8);
         }
         result += values[i] * li;
     }

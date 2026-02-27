@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     }
 
     //Хардкод выбора отрезка построения
-    if (set_number == 1) {
+    if (set_number == 1 || set_number == 3) {
         a = -1.0;
         b = 1.0;
     } else {

@@ -1,7 +1,7 @@
 clear && clear
 
-n_nodes=50
-n_eval=150
+n_nodes=11
+n_eval=300
 
 mkdir -p data_graph data_plot plots
 
