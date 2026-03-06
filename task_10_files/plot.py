@@ -1,12 +1,6 @@
 import argparse
 import os
-
-try:
-    import matplotlib.pyplot as plt
-except ModuleNotFoundError as exc:
-    raise SystemExit(
-        "matplotlib is required for plotting (pip install matplotlib)."
-    ) from exc
+import matplotlib.pyplot as plt
 
 
 def read_table(path):
