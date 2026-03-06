@@ -7,7 +7,7 @@ seed=42
 rm -rf data_graph data_plot plots
 mkdir -p data_graph data_plot plots
 
-show_plots=1   # 1 - show interactive windows, 0 - save only
+show_plots=0   # 1 - show interactive windows, 0 - save only
 
 for set_number in ${set_numbers}; do
     if [ "${set_number}" = "1" ] || [ "${set_number}" = "3" ]; then
@@ -18,7 +18,7 @@ for set_number in ${set_numbers}; do
         b=1.0
     fi
 
-    ./task_9 "${n_nodes}" "${a}" "${b}" "${seed}" "${set_number}" > "data_graph/set_${set_number}_n${n_nodes}.txt"
+    ./task_10 "${n_nodes}" "${a}" "${b}" "${seed}" "${set_number}" > "data_graph/set_${set_number}_n${n_nodes}.txt"
     echo "Saved data_graph/set_${set_number}_n${n_nodes}.txt"
 
     for nodes_type in uniform chebyshev random; do
