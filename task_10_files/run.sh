@@ -1,36 +1,14 @@
 clear && clear
 
-n_nodes=101
-set_numbers="1 2 3 4 5 6 7"
-seed=42
+mkdir -p data_plot plots
 
-rm -rf data_graph data_plot plots
-mkdir -p data_graph data_plot plots
-
-show_plots=0   # 1 - show interactive windows, 0 - save only
-
-for set_number in ${set_numbers}; do
-    if [ "${set_number}" = "1" ] || [ "${set_number}" = "3" ]; then
-        a=-1.0
-        b=1.0
+for example_name in example_1 example_2; do
+    input_path="examples/${example_name}.txt"
+    plot_path="plots/${example_name}.png"
+    ./task_10 "${input_path}"
+    if python3 plot.py --save "${plot_path}"; then
+        echo "Saved ${plot_path}"
     else
-        a=0.0
-        b=1.0
+        echo "Skipped ${plot_path}: failed to run plot.py (check matplotlib)." >&2
     fi
-
-    ./task_10 "${n_nodes}" "${a}" "${b}" "${seed}" "${set_number}" > "data_graph/set_${set_number}_n${n_nodes}.txt"
-    echo "Saved data_graph/set_${set_number}_n${n_nodes}.txt"
-
-    for nodes_type in uniform chebyshev random; do
-        cp "data_plot/${nodes_type}.txt" "data_plot/set_${set_number}_n${n_nodes}_${nodes_type}.txt"
-        cp "data_plot/${nodes_type}_nodes.txt" "data_plot/set_${set_number}_n${n_nodes}_${nodes_type}_nodes.txt"
-        save_path="plots/set_${set_number}_n${n_nodes}_${nodes_type}.png"
-        if python3 plot.py --nodes "${nodes_type}" --save "${save_path}" $( [ ${show_plots} -eq 1 ] && echo --show ); then
-            echo "Saved ${save_path}"
-        else
-            echo "Skipped ${save_path}: failed to run plot.py (check matplotlib)." >&2
-        fi
-    done
 done
-
-rm -rf data_plot

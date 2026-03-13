@@ -15,4 +15,4 @@ Tasks for the course of **numerical_methods** at the university.
 - **Task 7** – Solving a second-order parabolic PDE with explicit and implicit finite-difference schemes.  
 - **Task 8** – Polynomial interpolation on different node grids (uniform and Chebyshev), including Vandermonde and Lagrange forms.  
 - **Task 9** – Comparison of global polynomial interpolation and piecewise cubic Hermite interpolation for multiple test functions and node types.
-- **Task 10** – Comparison of global polynomial interpolation and natural cubic spline interpolation for multiple test functions and node types.
+- **Task 10** – Comparison of global polynomial interpolation and weighted cubic spline interpolation for multiple test functions and node types.

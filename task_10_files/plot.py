@@ -1,24 +1,14 @@
 import argparse
-import os
-import matplotlib.pyplot as plt
+
+try:
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        "matplotlib is required for plotting (pip install matplotlib)."
+    ) from exc
 
 
-def read_table(path):
-    xs, exact, global_poly, spline, diff = [], [], [], [], []
-    with open(path, "r", encoding="utf-8") as file:
-        for line in file:
-            parts = line.strip().split()
-            if not parts:
-                continue
-            xs.append(float(parts[0]))
-            exact.append(float(parts[1]))
-            global_poly.append(float(parts[2]))
-            spline.append(float(parts[3]))
-            diff.append(float(parts[4]))
-    return xs, exact, global_poly, spline, diff
-
-
-def read_nodes(path):
+def read_pairs(path):
     xs, ys = [], []
     with open(path, "r", encoding="utf-8") as file:
         for line in file:
@@ -30,74 +20,44 @@ def read_nodes(path):
     return xs, ys
 
 
+def get_limits(values):
+    left = min(values)
+    right = max(values)
+    span = right - left
+
+    if span == 0.0:
+        pad = max(1.0, 0.1 * abs(left))
+    else:
+        pad = 0.1 * span
+
+    return left - pad, right + pad
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Plot task_10 interpolation results.")
-    parser.add_argument(
-        "--nodes",
-        choices=["uniform", "chebyshev", "random"],
-        required=True,
-        help="nodes type",
-    )
-    parser.add_argument("--data-dir", default="data_plot", help="directory with data")
+    parser = argparse.ArgumentParser(description="Plot weighted spline from data_plot files.")
+    parser.add_argument("--curve", default="data_plot/curve.txt", help="curve file")
+    parser.add_argument("--nodes", default="data_plot/nodes.txt", help="nodes file")
     parser.add_argument("--save", default="", help="save figure to PNG path")
     parser.add_argument("--show", action="store_true", help="show interactive window")
     args = parser.parse_args()
 
-    table_path = os.path.join(args.data_dir, f"{args.nodes}.txt")
-    nodes_path = os.path.join(args.data_dir, f"{args.nodes}_nodes.txt")
+    curve_x, curve_y = read_pairs(args.curve)
+    node_x, node_y = read_pairs(args.nodes)
 
-    xs, exact, global_poly, spline, diff = read_table(table_path)
-    nx, ny = read_nodes(nodes_path)
-
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
-
-    ax1.plot(xs, exact, label="f(x)", linewidth=2, marker="o", markersize=3)
-    ax1.plot(
-        xs,
-        global_poly,
-        label="P_{n-1}(x)",
-        linewidth=1.8,
-        linestyle="--",
-        marker="s",
-        markersize=3,
-    )
-    ax1.plot(
-        xs,
-        spline,
-        label="S(x)",
-        linewidth=1.8,
-        linestyle=":",
-        marker="^",
-        markersize=3,
-    )
-    ax1.scatter(nx, ny, label="nodes", s=40, zorder=3)
-    ax1.set_ylabel("value")
-    ax1.set_title(f"Task 10 interpolation ({args.nodes} nodes)")
-    ax1.grid(True)
-    ax1.set_ylim(
-        min(exact) - (max(exact) - min(exact)) / 10,
-        max(exact) + (max(exact) - min(exact)) / 10,
-    )
-    ax1.legend()
-
-    ax2.plot(
-        xs,
-        diff,
-        label="E_n(x)=|P-S|",
-        color="tab:red",
-        linewidth=2,
-        marker="o",
-        markersize=3,
-    )
-    ax2.set_xlabel("x")
-    ax2.set_ylabel("E_n(x)")
-    ax2.grid(True)
-    ax2.legend()
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(curve_x, curve_y, label="weighted spline", linewidth=2)
+    ax.scatter(node_x, node_y, label="input points", color="tab:red", s=40, zorder=3)
+    ax.set_xlim(*get_limits(node_x))
+    ax.set_ylim(*get_limits(node_y))
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_title("Weighted Spline")
+    ax.grid(True)
+    ax.legend()
 
     fig.tight_layout()
 
     if args.save:
-        os.makedirs(os.path.dirname(args.save) or ".", exist_ok=True)
         fig.savefig(args.save, dpi=150)
 
     if args.show or not args.save:

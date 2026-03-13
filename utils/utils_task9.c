@@ -122,6 +122,21 @@ static const TestFunctionConfig *select_test_function(int set_number) {
     return &configs[set_number - 1];
 }
 
+int task9_get_test_function(int set_number, const char **name, double (**func)(double)) {
+    const TestFunctionConfig *cfg = select_test_function(set_number);
+    if (!cfg) {
+        return 1;
+    }
+
+    if (name) {
+        *name = cfg->name;
+    }
+    if (func) {
+        *func = cfg->func;
+    }
+    return 0;
+}
+
 static int fill_random_nodes(double *nodes, int n, double a, double b) {
     for (int attempt = 0; attempt < 1000; ++attempt) {
         for (int i = 0; i < n; ++i) {
@@ -142,6 +157,15 @@ static int fill_random_nodes(double *nodes, int n, double a, double b) {
         }
     }
     return 1;
+}
+
+void task9_sort_nodes(double *nodes, int n) {
+    qsort(nodes, (size_t)n, sizeof(double), cmp_double);
+}
+
+int task9_fill_random_nodes(double *nodes, int n, double a, double b, unsigned int seed) {
+    srand(seed);
+    return fill_random_nodes(nodes, n, a, b);
 }
 
 static int build_hermite_coefficients(const double *nodes, const double *values,
@@ -183,6 +207,10 @@ static int find_interval(const double *nodes, int n, double x) {
     return n - 2;
 }
 
+int task9_find_interval(const double *nodes, int n, double x) {
+    return find_interval(nodes, n, x);
+}
+
 static double eval_hermite_piecewise(const double *nodes, const double *values,
                                      const double *deriv, const double *coeff_a,
                                      const double *coeff_b, int n, double x) {
@@ -204,6 +232,10 @@ static int build_comparison_points(const double *nodes, int n, double *points) {
     }
     points[k++] = nodes[n - 1];
     return k;
+}
+
+int task9_build_comparison_points(const double *nodes, int n, double *points) {
+    return build_comparison_points(nodes, n, points);
 }
 
 static int fill_nodes_for_case(const NodeConfig *config, double *nodes, int n_nodes,

@@ -1,401 +1,282 @@
+#include <errno.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "utils_interpolation.h"
+#include <sys/stat.h>
+#include <sys/types.h>
+#include "utils_matrix.h"
 #include "utils_task10.h"
 
-#define EPS_NODES 1e-12
-
-typedef enum {
-    NODES_UNIFORM = 0,
-    NODES_CHEBYSHEV = 1,
-    NODES_RANDOM = 2
-} NodeType;
+#define EPS 1e-12
+#define CURVE_POINTS 500
 
 typedef struct {
-    const char *name;
-    NodeType type;
-} NodeConfig;
+    double *x;
+    double *y;
+    double *w;
+    int n;
+    int has_left_derivative;
+    int has_right_derivative;
+    double left_derivative;
+    double right_derivative;
+} InputData;
 
-typedef struct {
-    const char *name;
-    double (*func)(double);
-} TestFunctionConfig;
+void init_input_data(InputData *data) {
+    data->x = NULL;
+    data->y = NULL;
+    data->w = NULL;
+    data->n = 0;
+    data->has_left_derivative = 0;
+    data->has_right_derivative = 0;
+    data->left_derivative = 0.0;
+    data->right_derivative = 0.0;
+}
 
-static const NodeConfig NODE_CONFIGS[] = {
-    {"uniform", NODES_UNIFORM},
-    {"chebyshev", NODES_CHEBYSHEV},
-    {"random", NODES_RANDOM},
-};
+void free_input_data(InputData *data) {
+    free(data->x);
+    free(data->y);
+    free(data->w);
+    init_input_data(data);
+}
 
-static int cmp_double(const void *lhs, const void *rhs) {
-    const double a = *(const double *)lhs;
-    const double b = *(const double *)rhs;
-    if (a < b) {
-        return -1;
-    }
-    if (a > b) {
-        return 1;
-    }
+int add_input_row(InputData *data, double x, double y, double w) {
+    double *new_x;
+    double *new_y;
+    double *new_w;
+    int new_n;
+
+    new_n = data->n + 1;
+
+    new_x = (double *)realloc(data->x, (size_t)new_n * sizeof(double));
+    data->x = new_x;
+
+    new_y = (double *)realloc(data->y, (size_t)new_n * sizeof(double));
+    data->y = new_y;
+
+    new_w = (double *)realloc(data->w, (size_t)new_n * sizeof(double));
+    data->w = new_w;
+
+    data->x[data->n] = x;
+    data->y[data->n] = y;
+    data->w[data->n] = w;
+    data->n = new_n;
+
     return 0;
 }
 
-static double func_1(double x) {
-    return 1.0 / (1.0 + 25.0 * x * x);
-}
+int read_input_file(const char *input_path, InputData *data) {
+    FILE *file;
+    char line[256];
+    char *ptr;
+    int expected_n;
+    double x;
+    double y;
+    double w;
 
-static double func_2(double x) {
-    return sin(2.0 * M_PI * x);
-}
+    init_input_data(data);
+    expected_n = -1;
 
-static double func_3(double x) {
-    return exp(x);
-}
+    file = fopen(input_path, "r");
 
-static double func_4(double x) {
-    const double t = x * (1.0 - x);
-    return t * t * exp(x);
-}
-
-static double func_5(double x) {
-    return cos(6.0 * M_PI * x);
-}
-
-static double func_6(double x) {
-    return log(1.0 + x);
-}
-
-static double func_7(double x) {
-    return sqrt(1.0 + x);
-}
-
-static const TestFunctionConfig *select_test_function(int set_number) {
-    static const TestFunctionConfig configs[] = {
-        {"1/(1+25*x^2)", func_1},
-        {"sin(2*pi*x)", func_2},
-        {"exp(x)", func_3},
-        {"x^2*(1-x)^2*exp(x)", func_4},
-        {"cos(6*pi*x)", func_5},
-        {"log(1+x)", func_6},
-        {"sqrt(1+x)", func_7},
-    };
-
-    if (set_number < 1 || set_number > (int)(sizeof(configs) / sizeof(configs[0]))) {
-        return NULL;
-    }
-
-    return &configs[set_number - 1];
-}
-
-static int fill_random_nodes(double *nodes, int n, double a, double b) {
-    for (int attempt = 0; attempt < 1000; ++attempt) {
-        for (int i = 0; i < n; ++i) {
-            const double u = (double)rand() / (double)RAND_MAX;
-            nodes[i] = a + (b - a) * u;
+    while (fgets(line, sizeof(line), file)) {
+        ptr = line;
+        while (*ptr == ' ' || *ptr == '\t' || *ptr == '\n' || *ptr == '\r') {
+            ++ptr;
         }
-        qsort(nodes, (size_t)n, sizeof(double), cmp_double);
 
-        int ok = 1;
-        for (int i = 1; i < n; ++i) {
-            if (nodes[i] - nodes[i - 1] < EPS_NODES) {
-                ok = 0;
-                break;
+        if (*ptr == '\0') {
+            continue;
+        }
+
+        if (*ptr == '#') {
+            if (sscanf(ptr, "#N = %d", &expected_n) == 1) {
+                continue;
             }
+            if (sscanf(ptr, "#f'_0 = %lf", &data->left_derivative) == 1) {
+                data->has_left_derivative = 1;
+                continue;
+            }
+            if (sscanf(ptr, "#f'_N = %lf", &data->right_derivative) == 1) {
+                data->has_right_derivative = 1;
+                continue;
+            }
+            continue;
         }
-        if (ok) {
-            return 0;
-        }
+
+        sscanf(ptr, "%lf %lf %lf", &x, &y, &w);
+        add_input_row(data, x, y, w);
     }
-    return 1;
+
+    fclose(file);
+    return 0;
 }
 
-static int build_natural_cubic_spline(const double *nodes, const double *values, int n,
-                                      double *coeff_b, double *coeff_c, double *coeff_d) {
-    double *h = NULL;
-    double *alpha = NULL;
-    double *l = NULL;
-    double *mu = NULL;
-    double *z = NULL;
-    double *c = NULL;
-    int status = 1;
+int build_weighted_spline(const InputData *data, double *b, double *coef_c, double *d) {
+    double *lower;
+    double *diag;
+    double *upper;
+    double *rhs;
+    double *h;
+    double *delta;
+    double *segment_w;
+    int n;
+    int i;
+    int status;
 
+    n = data->n;
+    status = 1;
+
+    lower = (double *)malloc((size_t)(n - 1) * sizeof(double));
+    diag = (double *)malloc((size_t)n * sizeof(double));
+    upper = (double *)malloc((size_t)(n - 1) * sizeof(double));
+    rhs = (double *)malloc((size_t)n * sizeof(double));
     h = (double *)malloc((size_t)(n - 1) * sizeof(double));
-    alpha = (double *)calloc((size_t)n, sizeof(double));
-    l = (double *)calloc((size_t)n, sizeof(double));
-    mu = (double *)calloc((size_t)n, sizeof(double));
-    z = (double *)calloc((size_t)n, sizeof(double));
-    c = (double *)calloc((size_t)n, sizeof(double));
+    delta = (double *)malloc((size_t)(n - 1) * sizeof(double));
+    segment_w = (double *)malloc((size_t)(n - 1) * sizeof(double));
 
-    if (!h || !alpha || !l || !mu || !z || !c) {
-        goto cleanup;
+    for (i = 0; i < n - 1; ++i) {
+        lower[i] = 0.0;
+        upper[i] = 0.0;
+        b[i] = 0.0;
+        d[i] = 0.0;
     }
 
-    for (int i = 0; i < n - 1; ++i) {
-        h[i] = nodes[i + 1] - nodes[i];
-        if (h[i] < EPS_NODES) {
-            goto cleanup;
-        }
+    for (i = 0; i < n; ++i) {
+        diag[i] = 0.0;
+        rhs[i] = 0.0;
+        coef_c[i] = 0.0;
+    }
+
+    for (i = 0; i < n - 1; ++i) {
+        h[i] = data->x[i + 1] - data->x[i];
+        delta[i] = (data->y[i + 1] - data->y[i]) / h[i];
+        segment_w[i] = data->w[i];
     }
 
     if (n == 2) {
-        coeff_b[0] = (values[1] - values[0]) / h[0];
-        coeff_c[0] = 0.0;
-        coeff_d[0] = 0.0;
-        status = 0;
-        goto cleanup;
-    }
-
-    for (int i = 1; i < n - 1; ++i) {
-        alpha[i] = 3.0 * (values[i + 1] - values[i]) / h[i]
-                 - 3.0 * (values[i] - values[i - 1]) / h[i - 1];
-    }
-
-    l[0] = 1.0;
-    mu[0] = 0.0;
-    z[0] = 0.0;
-
-    for (int i = 1; i < n - 1; ++i) {
-        l[i] = 2.0 * (nodes[i + 1] - nodes[i - 1]) - h[i - 1] * mu[i - 1];
-        if (fabs(l[i]) < EPS_NODES) {
-            goto cleanup;
-        }
-        mu[i] = h[i] / l[i];
-        z[i] = (alpha[i] - h[i - 1] * z[i - 1]) / l[i];
-    }
-
-    l[n - 1] = 1.0;
-    z[n - 1] = 0.0;
-    c[n - 1] = 0.0;
-
-    for (int j = n - 2; j >= 0; --j) {
-        c[j] = z[j] - mu[j] * c[j + 1];
-        coeff_b[j] = (values[j + 1] - values[j]) / h[j]
-                   - h[j] * (2.0 * c[j] + c[j + 1]) / 3.0;
-        coeff_c[j] = c[j];
-        coeff_d[j] = (c[j + 1] - c[j]) / (3.0 * h[j]);
-    }
-
-    status = 0;
-
-cleanup:
-    free(h);
-    free(alpha);
-    free(l);
-    free(mu);
-    free(z);
-    free(c);
-    return status;
-}
-
-static int find_interval(const double *nodes, int n, double x) {
-    if (x <= nodes[0]) {
-        return 0;
-    }
-    if (x >= nodes[n - 1]) {
-        return n - 2;
-    }
-
-    int left = 0;
-    int right = n - 2;
-    while (left <= right) {
-        const int mid = left + (right - left) / 2;
-        if (x < nodes[mid]) {
-            right = mid - 1;
-        } else if (x > nodes[mid + 1]) {
-            left = mid + 1;
-        } else {
-            return mid;
-        }
-    }
-    return n - 2;
-}
-
-static double eval_spline_piecewise(const double *nodes, const double *values,
-                                    const double *coeff_b, const double *coeff_c,
-                                    const double *coeff_d, int n, double x) {
-    const int i = find_interval(nodes, n, x);
-    const double dx = x - nodes[i];
-    return values[i]
-         + coeff_b[i] * dx
-         + coeff_c[i] * dx * dx
-         + coeff_d[i] * dx * dx * dx;
-}
-
-static int build_comparison_points(const double *nodes, int n, double *points) {
-    int k = 0;
-    for (int i = 0; i < n - 1; ++i) {
-        const double h = nodes[i + 1] - nodes[i];
-        points[k++] = nodes[i];
-        points[k++] = nodes[i] + h / 3.0;
-        points[k++] = nodes[i] + 2.0 * h / 3.0;
-    }
-    points[k++] = nodes[n - 1];
-    return k;
-}
-
-static int fill_nodes_for_case(const NodeConfig *config, double *nodes, int n_nodes,
-                               double a, double b, unsigned int seed) {
-    if (config->type == NODES_UNIFORM) {
-        fill_uniform_nodes(nodes, n_nodes, a, b);
+        b[0] = delta[0];
+        free(lower);
+        free(diag);
+        free(upper);
+        free(rhs);
+        free(h);
+        free(delta);
+        free(segment_w);
         return 0;
     }
 
-    if (config->type == NODES_CHEBYSHEV) {
-        fill_chebyshev_nodes(nodes, n_nodes, a, b);
-        qsort(nodes, (size_t)n_nodes, sizeof(double), cmp_double);
-        return 0;
+    if (data->has_left_derivative) {
+        diag[0] = 2.0 * segment_w[0] * h[0];
+        upper[0] = segment_w[0] * h[0];
+        rhs[0] = 3.0 * (segment_w[0] * delta[0] - data->left_derivative);
+    } else {
+        diag[0] = 1.0;
+        rhs[0] = 0.0;
     }
 
-    srand(seed);
-    return fill_random_nodes(nodes, n_nodes, a, b);
-}
-
-static int run_case(const TestFunctionConfig *test, const NodeConfig *config,
-                    int n_nodes, double a, double b, unsigned int seed) {
-    double *nodes = NULL;
-    double *values = NULL;
-    double *matrix = NULL;
-    double *rhs = NULL;
-    double *coeff = NULL;
-    double *coeff_b = NULL;
-    double *coeff_c = NULL;
-    double *coeff_d = NULL;
-    double *cmp_points = NULL;
-    FILE *table_file = NULL;
-    FILE *nodes_file = NULL;
-    char table_path[256];
-    char nodes_path[256];
-    int status = 1;
-
-    const int n_cmp = 3 * n_nodes - 2;
-
-    nodes = (double *)malloc((size_t)n_nodes * sizeof(double));
-    values = (double *)malloc((size_t)n_nodes * sizeof(double));
-    matrix = (double *)malloc((size_t)n_nodes * (size_t)n_nodes * sizeof(double));
-    rhs = (double *)malloc((size_t)n_nodes * sizeof(double));
-    coeff = (double *)malloc((size_t)n_nodes * sizeof(double));
-    coeff_b = (double *)malloc((size_t)(n_nodes - 1) * sizeof(double));
-    coeff_c = (double *)malloc((size_t)(n_nodes - 1) * sizeof(double));
-    coeff_d = (double *)malloc((size_t)(n_nodes - 1) * sizeof(double));
-    cmp_points = (double *)malloc((size_t)n_cmp * sizeof(double));
-
-    if (!nodes || !values || !matrix || !rhs || !coeff || !coeff_b || !coeff_c || !coeff_d || !cmp_points) {
-        fprintf(stderr, "Error: memory allocation failed\n");
-        goto cleanup;
+    for (i = 1; i < n - 1; ++i) {
+        lower[i - 1] = segment_w[i - 1] * h[i - 1];
+        diag[i] = 2.0 * (segment_w[i - 1] * h[i - 1] + segment_w[i] * h[i]);
+        upper[i] = segment_w[i] * h[i];
+        rhs[i] = 3.0 * (segment_w[i] * delta[i] - segment_w[i - 1] * delta[i - 1]);
     }
 
-    if (fill_nodes_for_case(config, nodes, n_nodes, a, b, seed) != 0) {
-        fprintf(stderr, "Error: failed to build %s nodes\n", config->name);
-        goto cleanup;
+    if (data->has_right_derivative) {
+        lower[n - 2] = segment_w[n - 2] * h[n - 2];
+        diag[n - 1] = 2.0 * segment_w[n - 2] * h[n - 2];
+        rhs[n - 1] = 3.0 * (data->right_derivative - segment_w[n - 2] * delta[n - 2]);
+    } else {
+        diag[n - 1] = 1.0;
+        rhs[n - 1] = 0.0;
     }
 
-    for (int i = 0; i < n_nodes; ++i) {
-        values[i] = test->func(nodes[i]);
-        rhs[i] = values[i];
+    progonka(lower, diag, upper, n, rhs, coef_c);
+    for (i = 0; i < n - 1; ++i) {
+        b[i] = delta[i] - h[i] * (2.0 * coef_c[i] + coef_c[i + 1]) / 3.0;
+        d[i] = (coef_c[i + 1] - coef_c[i]) / (3.0 * h[i]);
     }
 
-    fill_vandermonde(matrix, nodes, n_nodes);
-    if (solve_linear_system(matrix, rhs, coeff, n_nodes) != 0) {
-        fprintf(stderr, "Error: Vandermonde system is singular\n");
-        goto cleanup;
-    }
-
-    if (build_natural_cubic_spline(nodes, values, n_nodes, coeff_b, coeff_c, coeff_d) != 0) {
-        fprintf(stderr, "Error: failed to build cubic spline coefficients\n");
-        goto cleanup;
-    }
-
-    snprintf(table_path, sizeof(table_path), "data_plot/%s.txt", config->name);
-    snprintf(nodes_path, sizeof(nodes_path), "data_plot/%s_nodes.txt", config->name);
-    table_file = fopen(table_path, "w");
-    nodes_file = fopen(nodes_path, "w");
-    if (!table_file || !nodes_file) {
-        fprintf(stderr, "Error: cannot open output files for %s nodes\n", config->name);
-        goto cleanup;
-    }
-
-    printf("%s nodes\n", config->name);
-    printf("%14s %22s %22s %22s %22s\n", "x", "f(x)", "P_{n-1}(x)", "S(x)", "E_n(x)");
-
-    const int actual_cmp = build_comparison_points(nodes, n_nodes, cmp_points);
-    double max_diff = 0.0;
-
-    for (int i = 0; i < actual_cmp; ++i) {
-        const double x = cmp_points[i];
-        const double fx = test->func(x);
-        const double px = eval_polynomial(coeff, n_nodes, x);
-        const double sx = eval_spline_piecewise(nodes, values, coeff_b, coeff_c, coeff_d, n_nodes, x);
-        const double en = fabs(px - sx);
-        if (en > max_diff) {
-            max_diff = en;
-        }
-
-        printf("%14.8f %22.12e %22.12e %22.12e %22.12e\n", x, fx, px, sx, en);
-        fprintf(table_file, "%.20f %.20f %.20f %.20f %.20f\n", x, fx, px, sx, en);
-    }
-    printf("max E_n(x) = %.12e\n\n", max_diff);
-
-    for (int i = 0; i < n_nodes; ++i) {
-        fprintf(nodes_file, "%.20f %.20f\n", nodes[i], values[i]);
-    }
-
-    status = 0;
-
-cleanup:
-    if (table_file) {
-        fclose(table_file);
-    }
-    if (nodes_file) {
-        fclose(nodes_file);
-    }
-    free(nodes);
-    free(values);
-    free(matrix);
+    free(lower);
+    free(diag);
+    free(upper);
     free(rhs);
-    free(coeff);
-    free(coeff_b);
-    free(coeff_c);
-    free(coeff_d);
-    free(cmp_points);
+    free(h);
+    free(delta);
+    free(segment_w);
+    status = 0;
     return status;
 }
 
-int task10_run_for_set(int set_number, int n_nodes, double a, double b, unsigned int seed) {
-    const TestFunctionConfig *test = select_test_function(set_number);
+double eval_spline(const InputData *data, const double *b, const double *c, const double *d, double x) {
+    int i;
+    double dx;
 
-    if (!test) {
-        fprintf(stderr, "Error: incorrect set_number=%d (expected 1..7)\n", set_number);
-        return 1;
+    i = 0;
+    while (i < data->n - 2 && x > data->x[i + 1]) {
+        ++i;
     }
 
-    if (n_nodes < 2) {
-        fprintf(stderr, "Error: n_nodes must be >= 2\n");
-        return 1;
-    }
-    if (a >= b) {
-        fprintf(stderr, "Error: require a < b\n");
-        return 1;
-    }
-    if ((set_number == 6 || set_number == 7) && a <= -1.0) {
-        fprintf(stderr, "Error: for set %d require interval with a > -1\n", set_number);
-        return 1;
+    dx = x - data->x[i];
+    return data->y[i] + b[i] * dx + c[i] * dx * dx + d[i] * dx * dx * dx;
+}
+
+int write_plot_data(const InputData *data, const double *b, const double *c, const double *d) {
+    FILE *curve_file;
+    FILE *nodes_file;
+    int i;
+    double x0;
+    double x1;
+    double x;
+    double y;
+
+
+    curve_file = fopen("data_plot/curve.txt", "w");
+    nodes_file = fopen("data_plot/nodes.txt", "w");
+
+    for (i = 0; i < data->n; ++i) {
+        fprintf(nodes_file, "%.20f %.20f\n", data->x[i], data->y[i]);
     }
 
-    printf("Set %d\n", set_number);
-    printf("Function: f(x) = %s\n", test->name);
-    printf("Interpolation: global polynomial vs natural cubic spline\n");
-    printf("Interval [%.6f, %.6f], nodes=%d, seed=%u\n\n", a, b, n_nodes, seed);
-
-    const size_t n_cases = sizeof(NODE_CONFIGS) / sizeof(NODE_CONFIGS[0]);
-    for (size_t i = 0; i < n_cases; ++i) {
-        if (run_case(test, &NODE_CONFIGS[i], n_nodes, a, b, seed) != 0) {
-            return 1;
-        }
+    x0 = data->x[0];
+    x1 = data->x[data->n - 1];
+    for (i = 0; i < CURVE_POINTS; ++i) {
+        x = x0 + (x1 - x0) * (double)i / (double)(CURVE_POINTS - 1);
+        y = eval_spline(data, b, c, d, x);
+        fprintf(curve_file, "%.20f %.20f\n", x, y);
     }
 
+    fclose(curve_file);
+    fclose(nodes_file);
     return 0;
 }
 
-int task10_run(int n_nodes, double a, double b, unsigned int seed) {
-    return task10_run_for_set(1, n_nodes, a, b, seed);
+int task10_run_from_file(const char *input_path) {
+    InputData data;
+    double *b;
+    double *c;
+    double *d;
+    int status;
+
+    init_input_data(&data);
+    status = 1;
+
+    if (read_input_file(input_path, &data) != 0) {
+        return 1;
+    }
+
+    b = (double *)malloc((size_t)(data.n - 1) * sizeof(double));
+    c = (double *)malloc((size_t)data.n * sizeof(double));
+    d = (double *)malloc((size_t)(data.n - 1) * sizeof(double));
+
+    build_weighted_spline(&data, b, c, d);
+    write_plot_data(&data, b, c, d);
+
+    printf("Read %d points from %s\n", data.n, input_path);
+    printf("Saved data_plot/nodes.txt and data_plot/curve.txt\n");
+    status = 0;
+    free(b);
+    free(c);
+    free(d);
+    free_input_data(&data);
+    return status;
 }
