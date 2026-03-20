@@ -51,21 +51,10 @@ def main():
     ax1.plot(x, sx, color="tab:red", lw=1.8, label="S(x)")
     ax1.scatter(nx, ny, color="black", s=30, zorder=5, label=f"nodes (n={n_nodes})")
 
-    # sigma annotations above each node
-    for i in range(len(wx)):
-        ax1.annotate(
-            f"{sigma[i]:.2f}",
-            xy=(wx[i], ny[i]),
-            xytext=(0, 8),
-            textcoords="offset points",
-            ha="center",
-            va="bottom",
-            fontsize=7.5,
-            color="tab:blue",
-        )
-
     ax1.set_ylabel("S(x)", fontsize=12)
-    title = f"Hermite spline with tension  (n={n_nodes})"
+    r_vals = np.unique(np.round(sigma, 4))
+    r_str  = f"{r_vals[0]:.2f}" if len(r_vals) == 1 else f"[{r_vals.min():.2f}, {r_vals.max():.2f}]"
+    title  = f"Rational Hermite spline  (n={n_nodes},  r={r_str})"
     if src:
         title += f"\n{src}"
     ax1.set_title(title, fontsize=11)
