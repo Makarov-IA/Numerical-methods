@@ -138,15 +138,16 @@ int task9_get_test_function(int set_number, const char **name, double (**func)(d
 }
 
 static int fill_random_nodes(double *nodes, int n, double a, double b) {
-    for (int attempt = 0; attempt < 1000; ++attempt) {
-        for (int i = 0; i < n; ++i) {
+    int attempt, i, ok;
+    for (attempt = 0; attempt < 1000; ++attempt) {
+        for (i = 0; i < n; ++i) {
             const double u = (double)rand() / (double)RAND_MAX;
             nodes[i] = a + (b - a) * u;
         }
         qsort(nodes, (size_t)n, sizeof(double), cmp_double);
 
-        int ok = 1;
-        for (int i = 1; i < n; ++i) {
+        ok = 1;
+        for (i = 1; i < n; ++i) {
             if (nodes[i] - nodes[i - 1] < EPS_NODES) {
                 ok = 0;
                 break;
@@ -171,7 +172,8 @@ int task9_fill_random_nodes(double *nodes, int n, double a, double b, unsigned i
 static int build_hermite_coefficients(const double *nodes, const double *values,
                                       const double *deriv, int n,
                                       double *coeff_a, double *coeff_b) {
-    for (int i = 0; i < n - 1; ++i) {
+    int i;
+    for (i = 0; i < n - 1; ++i) {
         const double h = nodes[i + 1] - nodes[i];
         if (h < EPS_NODES) {
             return 1;
@@ -185,6 +187,7 @@ static int build_hermite_coefficients(const double *nodes, const double *values,
 }
 
 static int find_interval(const double *nodes, int n, double x) {
+    int left, right;
     if (x <= nodes[0]) {
         return 0;
     }
@@ -192,8 +195,8 @@ static int find_interval(const double *nodes, int n, double x) {
         return n - 2;
     }
 
-    int left = 0;
-    int right = n - 2;
+    left = 0;
+    right = n - 2;
     while (left <= right) {
         const int mid = left + (right - left) / 2;
         if (x < nodes[mid]) {
@@ -223,8 +226,9 @@ static double eval_hermite_piecewise(const double *nodes, const double *values,
 }
 
 static int build_comparison_points(const double *nodes, int n, double *points) {
+    int i;
     int k = 0;
-    for (int i = 0; i < n - 1; ++i) {
+    for (i = 0; i < n - 1; ++i) {
         const double h = nodes[i + 1] - nodes[i];
         points[k++] = nodes[i];
         points[k++] = nodes[i] + h / 3.0;
@@ -257,6 +261,9 @@ static int fill_nodes_for_case(const NodeConfig *config, double *nodes, int n_no
 
 static int run_case(const TestFunctionConfig *test, const NodeConfig *config,
                     int n_nodes, double a, double b, unsigned int seed) {
+    int i;
+    int actual_cmp;
+    double max_diff;
     double *nodes = NULL;
     double *values = NULL;
     double *deriv = NULL;
@@ -294,7 +301,7 @@ static int run_case(const TestFunctionConfig *test, const NodeConfig *config,
         goto cleanup;
     }
 
-    for (int i = 0; i < n_nodes; ++i) {
+    for (i = 0; i < n_nodes; ++i) {
         values[i] = test->func(nodes[i]);
         deriv[i] = test->derivative(nodes[i]);
         rhs[i] = values[i];
@@ -323,10 +330,10 @@ static int run_case(const TestFunctionConfig *test, const NodeConfig *config,
     printf("%s nodes\n", config->name);
     printf("%14s %22s %22s %22s %22s\n", "x", "f(x)", "P_{n-1}(x)", "H(x)", "E_n(x)");
 
-    const int actual_cmp = build_comparison_points(nodes, n_nodes, cmp_points);
-    double max_diff = 0.0;
+    actual_cmp = build_comparison_points(nodes, n_nodes, cmp_points);
+    max_diff = 0.0;
 
-    for (int i = 0; i < actual_cmp; ++i) {
+    for (i = 0; i < actual_cmp; ++i) {
         const double x = cmp_points[i];
         const double fx = test->func(x);
         const double px = eval_polynomial(coeff, n_nodes, x);
@@ -341,7 +348,7 @@ static int run_case(const TestFunctionConfig *test, const NodeConfig *config,
     }
     printf("max E_n(x) = %.12e\n\n", max_diff);
 
-    for (int i = 0; i < n_nodes; ++i) {
+    for (i = 0; i < n_nodes; ++i) {
         fprintf(nodes_file, "%.20f %.20f %.20f\n", nodes[i], values[i], deriv[i]);
     }
 
@@ -367,6 +374,8 @@ cleanup:
 }
 
 int task9_run_for_set(int set_number, int n_nodes, double a, double b, unsigned int seed) {
+    size_t i;
+    size_t n_cases;
     const TestFunctionConfig *test = select_test_function(set_number);
 
     if (!test) {
@@ -392,8 +401,8 @@ int task9_run_for_set(int set_number, int n_nodes, double a, double b, unsigned 
     printf("Derivative: f'(x) = %s\n", test->derivative_name);
     printf("Interval [%.6f, %.6f], nodes=%d, seed=%u\n\n", a, b, n_nodes, seed);
 
-    const size_t n_cases = sizeof(NODE_CONFIGS) / sizeof(NODE_CONFIGS[0]);
-    for (size_t i = 0; i < n_cases; ++i) {
+    n_cases = sizeof(NODE_CONFIGS) / sizeof(NODE_CONFIGS[0]);
+    for (i = 0; i < n_cases; ++i) {
         if (run_case(test, &NODE_CONFIGS[i], n_nodes, a, b, seed) != 0) {
             return 1;
         }

@@ -11,14 +11,18 @@
 
 int main(int argc, char *argv[]) {
     int schema_type, set_number, N;
+    int i, j;
     int number_of_points_x, number_of_points_t;
     double T;
     double h, tau, t, x;
     char path[256];
     FILE *file;
-    double *initial;
-    double *u                        = NULL;
+    double *initial = NULL;
+    double *u                         = NULL;
     double (*u_theor)(double, double) = NULL;
+    double (*p_func)(double, double)  = NULL;
+    double (*f_func)(double, double)  = NULL;
+    double (*u0)(double)              = NULL;
     double max_diff;
     double u_num, u_th, diff;
     double r;
@@ -30,11 +34,6 @@ int main(int argc, char *argv[]) {
     assert(sscanf(argv[3], "%lf", &T) == 1);
     assert(sscanf(argv[4], "%d", &number_of_points_x) == 1);
     assert(sscanf(argv[5], "%d", &number_of_points_t) == 1);
-
-    // Выбор функций p(t,x), f(t,x) и начальных условий u(0,x)
-    double (*p_func)(double, double) = NULL;
-    double (*f_func)(double, double) = NULL;
-    double (*u0)(double)             = NULL;
 
     switch (set_number) {
         case 1:
@@ -70,9 +69,9 @@ int main(int argc, char *argv[]) {
     h = 1.0/(double)(number_of_points_x - 2);
     tau = T/(double)(number_of_points_t - 1);
 
-    //Инициализируем
+    /* Инициализируем */
     initial = (double*)malloc(number_of_points_x * sizeof(double));
-    for (int i = 1; i < number_of_points_x-1; i++) {
+    for (i = 1; i < number_of_points_x-1; i++) {
         initial[i] = u0(h * i-h/2);
     }
     initial[0] = initial[1];
@@ -80,7 +79,7 @@ int main(int argc, char *argv[]) {
 
     if (schema_type == 1) {
         u = solve_explicitly(initial, number_of_points_x, number_of_points_t, T, f_func, p_func);
-    } 
+    }
     else if (schema_type == 2) {
         N = number_of_points_x-2;
         r = tau/(h*h);
@@ -89,34 +88,34 @@ int main(int argc, char *argv[]) {
         c = (double*)malloc((N-1) * sizeof(double));
         d = (double*)malloc(N * sizeof(double));
         u = (double*)malloc(number_of_points_x * number_of_points_t * sizeof(double));
-        for (int i = 0; i < number_of_points_x; i++) {
+        for (i = 0; i < number_of_points_x; i++) {
             u[i] = initial[i];
         }
 
-        for (int j = 1; j < number_of_points_t; j++) {
+        for (j = 1; j < number_of_points_t; j++) {
             double t_next = j * tau;
 
-            // Левая граница (Нейман: u_x=0 -> ghost u_{-1}=u_{1})
+            /*  Левая граница (Нейман: u_x=0 -> ghost u_{-1}=u_{1}) */
             b[0] = 1.0 + r - tau * p_func(t_next, h/2);
             c[0] = -r;
             d[0] = u[(j-1)*number_of_points_x+1] + tau * f_func(t_next, h/2);
 
-            // Внутренние узлы
-            for (int i = 1; i < N-1; i++) {
+            /*  Внутренние узлы */
+            for (i = 1; i < N-1; i++) {
                 a[i-1] = -r;
                 b[i] = 1.0 + 2.0 * r - tau * p_func(t_next, i * h+h/2);
                 c[i] = -r;
                 d[i] = u[(j-1)*number_of_points_x + 1 + i] + tau * f_func(t_next, i * h+h/2);
             }
 
-            // Правая граница (Нейман: u_N = u_{N-2})
+            /*  Правая граница (Нейман: u_N = u_{N-2}) */
             a[N-2] = -r;
             b[N-1] = 1.0 + r - tau * p_func(t_next, 1.0-h/2);
             d[N-1] = u[(j-1)*number_of_points_x + N] + tau * f_func(t_next, 1.0 - h/2);
 
 
 
-            // Решаем трёхдиагональную систему
+            /*  Решаем трёхдиагональную систему */
             progonka(a, b, c, N, d, &u[j*number_of_points_x+1]);
             u[j*number_of_points_x] = u[j*number_of_points_x + 1];
             u[j*number_of_points_x + number_of_points_x - 1] = u[j*number_of_points_x + number_of_points_x - 2];
@@ -129,9 +128,9 @@ int main(int argc, char *argv[]) {
     file = fopen(path, "w");
 
     max_diff = 0.0;
-    for (int j = 0; j < number_of_points_t; j++) {
+    for (j = 0; j < number_of_points_t; j++) {
         t = tau * j;
-        for (int i = 1; i < number_of_points_x-2; i++) {
+        for (i = 1; i < number_of_points_x-2; i++) {
             x = h * i - h/2;
             u_num = u[j * number_of_points_x + i];
             u_th = u_theor(t, x);

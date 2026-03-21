@@ -10,6 +10,9 @@ int main(int argc, char *argv[]) {
     double (*func)(double);
     double a;
     double b;
+    double *nodes;
+    char path[256];
+    char nodes_path[256];
 
     assert(argc >= 4);
     assert(sscanf(argv[1], "%d", &set_number) == 1);
@@ -22,7 +25,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    //Хардкод выбора отрезка построения
+    /* Хардкод выбора отрезка построения */
     if (set_number == 1 || set_number == 3) {
         a = -1.0;
         b = 1.0;
@@ -35,11 +38,9 @@ int main(int argc, char *argv[]) {
     printf("Interval [%.2f, %.2f], nodes=%d, eval_points=%d\n\n",
            a, b, n_nodes, n_eval);
 
-    double *nodes = (double *)malloc(n_nodes * sizeof(double));
-    char path[256];
+    nodes = (double *)malloc(n_nodes * sizeof(double));
 
     fill_uniform_nodes(nodes, n_nodes, a, b);
-    char nodes_path[256];
     snprintf(path, sizeof path, "data_plot/set_%d_uniform.txt", set_number);
     snprintf(nodes_path, sizeof nodes_path, "data_plot/set_%d_uniform_nodes.txt", set_number);
     print_tables("Uniform nodes", func, nodes, n_nodes, n_eval, a, b, path, nodes_path);

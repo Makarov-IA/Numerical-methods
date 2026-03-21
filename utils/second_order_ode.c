@@ -56,7 +56,7 @@ double p_part_6 (double x) {
     return 0;
 }
 
-//Одно из решений
+/* Одно из решений */
 double theoretical_solution_6 (double x) {
     return (pow(M_PI,2) +1)/(pow(M_PI,2))*cos(M_PI * x);
 }

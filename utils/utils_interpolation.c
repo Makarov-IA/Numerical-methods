@@ -5,7 +5,7 @@
 
 #define EPS 1e-12
 
-//Тестовый сет
+/* Тестовый сет */
 static double func_1(double x) {
     return 1.0 / (1.0 + 25.0 * x * x);
 }
@@ -23,7 +23,7 @@ static double func_4(double x) {
     return t * t * exp(x);
 }
 
-//Выбор тестовой функции
+/* Выбор тестовой функции */
 double (*select_function(int set_number))(double) {
     switch (set_number) {
         case 1:
@@ -39,7 +39,7 @@ double (*select_function(int set_number))(double) {
     }
 }
 
-//Возвращает имя тест функции для принта в таблицу
+/* Возвращает имя тест функции для принта в таблицу */
 const char *select_function_name(int set_number) {
     switch (set_number) {
         case 1:
@@ -57,41 +57,45 @@ const char *select_function_name(int set_number) {
     }
 }
 
-//равномерная сетка 
+/* равномерная сетка */
 void fill_uniform_nodes(double *nodes, int n, double a, double b) {
+    int i;
     double h = (b - a) / (double)(n - 1);
-    for (int i = 0; i < n; ++i) {
+    for (i = 0; i < n; ++i) {
         nodes[i] = a + h * (double)i;
     }
 }
 
-//чебышевская сетка
+/* чебышевская сетка */
 void fill_chebyshev_nodes(double *nodes, int n, double a, double b) {
-    for (int i = 0; i < n; ++i) {
+    int i;
+    for (i = 0; i < n; ++i) {
         double t = cos(M_PI * (2.0 * (double)i + 1.0) / (2.0 * (double)n));
         nodes[i] = 0.5 * (a + b) + 0.5 * (b - a) * t;
     }
 }
 
-//Заполняем матрицу для решения через СЛАУ
+/* Заполняем матрицу для решения через СЛАУ */
 void fill_vandermonde(double *matrix, const double *nodes, int n) {
-    for (int i = 0; i < n; ++i) {
+    int i, j;
+    for (i = 0; i < n; ++i) {
         double power = 1.0;
-        for (int j = 0; j < n; ++j) {
+        for (j = 0; j < n; ++j) {
             matrix[i * n + j] = power;
             power *= nodes[i];
         }
     }
 }
 
-//Простая решалка линейной системы Гауссом с выбором максимального по столбцу для численной стабильности
+/* Простая решалка линейной системы Гауссом с выбором максимального по столбцу для численной стабильности */
 int solve_linear_system(double *matrix, double *rhs, double *solution, int n) {
-    //Прямой ход
-    for (int i = 0; i < n; ++i) {
-        //Выбор максимального по столбцу
+    int i, r, c;
+    /* Прямой ход */
+    for (i = 0; i < n; ++i) {
+        /* Выбор максимального по столбцу */
         int pivot = i;
         double max_val = fabs(matrix[i * n + i]);
-        for (int r = i + 1; r < n; ++r) {
+        for (r = i + 1; r < n; ++r) {
             double val = fabs(matrix[r * n + i]);
             if (val > max_val) {
                 max_val = val;
@@ -104,7 +108,7 @@ int solve_linear_system(double *matrix, double *rhs, double *solution, int n) {
         }
 
         if (pivot != i) {
-            for (int c = i; c < n; ++c) {
+            for (c = i; c < n; ++c) {
                 double tmp = matrix[i * n + c];
                 matrix[i * n + c] = matrix[pivot * n + c];
                 matrix[pivot * n + c] = tmp;
@@ -116,20 +120,20 @@ int solve_linear_system(double *matrix, double *rhs, double *solution, int n) {
             }
         }
 
-        for (int r = i + 1; r < n; ++r) {
+        for (r = i + 1; r < n; ++r) {
             double factor = matrix[r * n + i] / matrix[i * n + i];
             matrix[r * n + i] = 0.0;
-            for (int c = i + 1; c < n; ++c) {
+            for (c = i + 1; c < n; ++c) {
                 matrix[r * n + c] -= factor * matrix[i * n + c];
             }
             rhs[r] -= factor * rhs[i];
         }
     }
 
-    //Обратный ход
-    for (int i = n - 1; i >= 0; --i) {
+    /* Обратный ход */
+    for (i = n - 1; i >= 0; --i) {
         double sum = rhs[i];
-        for (int c = i + 1; c < n; ++c) {
+        for (c = i + 1; c < n; ++c) {
             sum -= matrix[i * n + c] * solution[c];
         }
         if (fabs(matrix[i * n + i]) < 1e-18) {
@@ -141,22 +145,24 @@ int solve_linear_system(double *matrix, double *rhs, double *solution, int n) {
     return 0;
 }
 
-//Вычисляем полином из коэффициентов
+/* Вычисляем полином из коэффициентов */
 double eval_polynomial(const double *coeff, int n, double x) {
+    int i;
     double result = coeff[n - 1];
-    for (int i = n - 2; i >= 0; --i) {
+    for (i = n - 2; i >= 0; --i) {
         result = result * x + coeff[i];
     }
     return result;
 }
 
-//Считаем через лагранжа
+/* Считаем через лагранжа */
 double eval_lagrange(const double *nodes, const double *values, int n, double x) {
+    int i, j;
     double result = 0.0;
 
-    for (int i = 0; i < n; ++i) {
+    for (i = 0; i < n; ++i) {
         double li = 1.0;
-        for (int j = 0; j < n; ++j) {
+        for (j = 0; j < n; ++j) {
             if (i == j) {
                 continue;
             }
@@ -168,15 +174,16 @@ double eval_lagrange(const double *nodes, const double *values, int n, double x)
     return result;
 }
 
-//Пайплайн поиска коэффициентов через решение СЛАУ
+/* Пайплайн поиска коэффициентов через решение СЛАУ */
 static int prepare_interpolation(double (*func)(double), const double *nodes, int n_nodes,
                                  double **values_out, double **coeff_out) {
+    int i;
     double *values = (double *)malloc(n_nodes * sizeof(double));
     double *matrix = (double *)malloc(n_nodes * n_nodes * sizeof(double));
     double *rhs = (double *)malloc(n_nodes * sizeof(double));
     double *coeff = (double *)malloc(n_nodes * sizeof(double));
 
-    for (int i = 0; i < n_nodes; ++i) {
+    for (i = 0; i < n_nodes; ++i) {
         values[i] = func(nodes[i]);
         rhs[i] = values[i];
     }
@@ -209,6 +216,9 @@ int print_tables(const char *title, double (*func)(double),
     double *coeff = NULL;
     FILE *file = NULL;
     FILE *nodes_file = NULL;
+    double step;
+    double x, exact, approx_slae, approx_lagrange;
+    int i;
 
     prepare_interpolation(func, nodes, n_nodes, &values, &coeff);
 
@@ -218,13 +228,13 @@ int print_tables(const char *title, double (*func)(double),
     printf("%s\n", title);
     printf("%12s %22s %22s %22s %22s\n", "x", "exact", "P_n", "L_(n-1)", "diff");
 
-    
-    double step = (b - a) / (double)(n_eval - 1);
-    for (int i = 0; i < n_eval; ++i) {
-        double x = a + step * (double)i;
-        double exact = func(x);
-        double approx_slae = eval_polynomial(coeff, n_nodes, x);
-        double approx_lagrange = eval_lagrange(nodes, values, n_nodes, x);
+
+    step = (b - a) / (double)(n_eval - 1);
+    for (i = 0; i < n_eval; ++i) {
+        x = a + step * (double)i;
+        exact = func(x);
+        approx_slae = eval_polynomial(coeff, n_nodes, x);
+        approx_lagrange = eval_lagrange(nodes, values, n_nodes, x);
         printf("%12.6f %22.12e %22.12e %22.12e %22.12e\n",
                 x, exact, approx_slae, approx_lagrange, fabs(approx_slae - approx_lagrange));
         fprintf(file, "%.20f %.20f %.20f %.20f %.20f\n",
@@ -232,10 +242,10 @@ int print_tables(const char *title, double (*func)(double),
 
     }
 
-    for (int i = 0; i < n_nodes; ++i) {
+    for (i = 0; i < n_nodes; ++i) {
         fprintf(nodes_file, "%.20f %.20f\n", nodes[i], values[i]);
     }
-    
+
     fclose(nodes_file);
     fclose(file);
     free(values);

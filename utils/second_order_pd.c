@@ -3,35 +3,37 @@
 #include <math.h>
 #include "second_order_pd.h"
 
-// Решение u_t = u_xx + p*u + f, Neumann: u_x(t,0)=0, u_x(t,1)=0
+/*  Решение u_t = u_xx + p*u + f, Neumann: u_x(t,0)=0, u_x(t,1)=0 */
 double* solve_explicitly(double* inital_conditions, int number_of_points_x, \
     int number_of_points_t, double T, \
     double(*f)(double, double),double(*p)(double, double)) {
 
+    int i, j, k;
     double tau = T/(double) (number_of_points_t-1);
     double h = 1.0/(double) (number_of_points_x-2);
     double hh = h*h;
     int row_prev, row_cur;
+    double * u;
 
-    // Проверка базовой устойчивости явной схемы теплопроводности
+    /*  Проверка базовой устойчивости явной схемы теплопроводности */
     if (tau/hh > 0.5) {
         fprintf(stderr, "Warning: explicit scheme may be unstable (tau/h^2 = %f)\n", tau/hh);
     }
 
-    double * u = (double*)malloc((number_of_points_t * number_of_points_x)*sizeof(double));
+    u = (double*)malloc((number_of_points_t * number_of_points_x)*sizeof(double));
 
-    // Добавляем начальные значения
-    for (int i = 0; i < number_of_points_x; i++) {
+    /*  Добавляем начальные значения */
+    for (i = 0; i < number_of_points_x; i++) {
         u[i] = inital_conditions[i];
     }
 
-    // Идем дальше по времени
-    for (int j = 1; j < number_of_points_t; j++) {
+    /*  Идем дальше по времени */
+    for (j = 1; j < number_of_points_t; j++) {
         row_prev = (j-1) * number_of_points_x;
         row_cur = j * number_of_points_x;
 
-        // Внутренние узлы
-        for (int k = 1; k < number_of_points_x - 1; k++) {
+        /*  Внутренние узлы */
+        for (k = 1; k < number_of_points_x - 1; k++) {
             u[row_cur + k] = u[row_prev + k] +
                 tau * ((u[row_prev + k + 1] - 2 * u[row_prev + k] + u[row_prev + k - 1]) / hh
                 + p(tau * (j-1), k * h -h/2) * u[row_prev + k]
@@ -43,7 +45,7 @@ double* solve_explicitly(double* inital_conditions, int number_of_points_x, \
     return u;
 }
 
-// Набор 1: p=0, f=0, u0=cos(pi x)
+/*  Набор 1: p=0, f=0, u0=cos(pi x) */
 double p_pd_1(double t, double x) {
     (void)t; (void)x; return 0.0;
 }
@@ -60,7 +62,7 @@ double theoretical_pd_1(double t, double x) {
     return cos(M_PI * x) * exp(-M_PI * M_PI * t);
 }
 
-// Набор 2: p=0, f=0, u0=cos(2*pi*x) => точное решение cos(2*pi*x)*exp(-4*pi^2*t)
+/*  Набор 2: p=0, f=0, u0=cos(2*pi*x) => точное решение cos(2*pi*x)*exp(-4*pi^2*t) */
 double p_pd_2(double t, double x) {
     (void)t; (void)x; return 0.0;
 }
@@ -77,7 +79,7 @@ double theoretical_pd_2(double t, double x) {
     return cos(2.0 * M_PI * x) * exp(-4.0 * M_PI * M_PI * t);
 }
 
-// Набор 3: p = x + t, u = e^{-t} cos(pi x), f = u*(pi^2 - 1 - x - t)
+/*  Набор 3: p = x + t, u = e^{-t} cos(pi x), f = u*(pi^2 - 1 - x - t) */
 double p_pd_3(double t, double x) {
     return x + t;
 }
@@ -95,7 +97,7 @@ double theoretical_pd_3(double t, double x) {
     return exp(-t) * cos(M_PI * x);
 }
 
-// Набор 4: p = 1, u = cos(t) cos(2 pi x), f = u_t - u_xx - p*u
+/*  Набор 4: p = 1, u = cos(t) cos(2 pi x), f = u_t - u_xx - p*u */
 double p_pd_4(double t, double x) {
     (void)t; (void)x; return 1.0;
 }

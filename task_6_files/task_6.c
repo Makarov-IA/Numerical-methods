@@ -3,15 +3,16 @@
 #include <math.h>
 #include <assert.h>
 #include <float.h>
-#include "../utils/utils_matrix.h" 
+#include "../utils/utils_matrix.h"
 #include "../utils/second_order_ode.h"
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) < (b) ? (b) : (a))
 
 int main(int argc, char *argv[]) {
-    
+
     int N;
+    int i, k;
     double h, lambda, norm_of_vector, result_of_mult;
     int method, set_number;
     char path[256];
@@ -30,9 +31,9 @@ int main(int argc, char *argv[]) {
     vector = (double*)malloc((N-1)*sizeof(double));
     solution = (double*)malloc((N-1)*sizeof(double));
 
-    //Парсим путь до файла, куда будем кидать точки
+    /* Парсим путь до файла, куда будем кидать точки */
     if (method == 1) {
-        snprintf(path, sizeof path, "data_graph/furier/%d.txt", set_number);    
+        snprintf(path, sizeof path, "data_graph/furier/%d.txt", set_number);
     }
     else if (method == 2) {
         snprintf(path, sizeof path, "data_graph/progonka/%d.txt", set_number);
@@ -46,10 +47,10 @@ int main(int argc, char *argv[]) {
     }
     file = fopen(path, "w");
 
-    //В 2.91 y1=y0, yN-1=yN => y'0 = 0, y'N-1
-    h = 1.0/(N-1); // Размер шага = длина интервала/количество точке разбиения 
+    /* В 2.91 y1=y0, yN-1=yN => y'0 = 0, y'N-1 */
+    h = 1.0/(N-1); /*  Размер шага = длина интервала/количество точке разбиения */
 
-    //Создание сета решения
+    /* Создание сета решения */
     switch (set_number) {
         case 1:
             right_part = right_part_1;
@@ -86,17 +87,17 @@ int main(int argc, char *argv[]) {
             free(solution); free(vector); free(right_part_vector);
             return 1;
     }
-    for (int i=0; i < N-1; i++) {
+    for (i=0; i < N-1; i++) {
         right_part_vector[i] = right_part(i*h+h/2);
     }
 
-    //Создание матрицы
+    /* Создание матрицы */
     if (method==2) {
         a = (double*)malloc((N-2)*sizeof(double));
         b = (double*)malloc((N-1)*sizeof(double));
         c = (double*)malloc((N-2)*sizeof(double));
-        for (int i=0; i<N-1; i++) {
-            if (i!=0 && i!=N-2) 
+        for (i=0; i<N-1; i++) {
+            if (i!=0 && i!=N-2)
                 b[i] = 2/pow(h, 2);
             else if (i==0 || i==N-2) {
                 b[i] = 1/pow(h, 2);
@@ -110,22 +111,22 @@ int main(int argc, char *argv[]) {
 
     }
 
-    //Инициализируем нулями
-    for (int i=0; i <N-1; i++) 
+    /* Инициализируем нулями */
+    for (i=0; i <N-1; i++)
         solution[i] = 0;
 
-    //Метод Фурье
-    //Нахождение собственных векторов
+    /* Метод Фурье */
+    /* Нахождение собственных векторов */
     if (method == 1) {
-        for (int k=1; k<N; k++) {
-            double * vector = (double*)malloc((N-1)*sizeof(double));
+        for (k=1; k<N; k++) {
+            vector = (double*)malloc((N-1)*sizeof(double));
             lambda = 4*pow(sin(M_PI*(k-1)/(2*N-2)),2)/pow(h,2) + p_part(0.0);
-            for (int i=0; i<N-1; i++) {
+            for (i=0; i<N-1; i++) {
                 vector[i] = cos(M_PI*(k-1)*(2*i+1)/(2*N-2));
             }
             result_of_mult = multiply_vector_and_vector(vector, right_part_vector, N-1);
             norm_of_vector = multiply_vector_and_vector(vector, vector, N-1);
-            for (int i=0; i<N-1; i++) {
+            for (i=0; i<N-1; i++) {
                 if (!(fabs(lambda) <= 1e-8))
                     solution[i] += vector[i]*result_of_mult/norm_of_vector/lambda;
                 else {
@@ -134,17 +135,17 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-        for (int k=0; k<N-1; k++)
+        for (k=0; k<N-1; k++)
             fprintf(file, "%lf %lf %lf\n", +h/2+h*k, solution[k], theoretical_solution(+h/2+h*k));
     }
 
-    //Метод прогонки
+    /* Метод прогонки */
     if (method==2) {
         if (!(progonka(a, b, c, N-1, right_part_vector, solution) == 0)) {
             free(a); free(b); free(c); free(solution); free(vector); free(right_part_vector);
             exit(1);
         }
-        for (int k=0; k<N-1; k++)
+        for (k=0; k<N-1; k++)
             fprintf(file, "%lf %lf %lf\n", +h/2+h*k, solution[k], theoretical_solution(+h/2+h*k));
         free(a); free(b); free(c);
     }
