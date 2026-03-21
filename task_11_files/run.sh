@@ -1,28 +1,25 @@
 #!/bin/bash
 clear && clear
 
-rm -rf data_graph data_plot plots
-mkdir -p data_graph data_plot plots
+rm -rf plots
+mkdir -p plots
 
-gcc -Wall -Wextra -pedantic -Wunused-variable -Werror \
-    task_11.c ../utils/utils_task11.c ../utils/utils_interpolation.c \
-    -lm -o task_11 \
+case "$(uname)" in
+    Darwin) LIB=libtask11.dylib ;;
+    *)      LIB=libtask11.so    ;;
+esac
+
+gcc -shared -fPIC -O2 \
+    ../utils/utils_task11.c \
+    -lm -o "$LIB" \
     || exit 1
-
-show_plots=0   # 1 - show interactive windows, 0 - save only
 
 for input_file in examples/set_*.txt; do
     name=$(basename "${input_file}" .txt)
-
-    ./task_11 "${input_file}" \
-        > "data_graph/${name}.txt"
-    echo "Saved data_graph/${name}.txt"
-
     save_path="plots/${name}.png"
-    if python3 plot.py --save "${save_path}" \
-        $( [ ${show_plots} -eq 1 ] && echo --show ); then
+    if python3 plot.py "${input_file}" --save "${save_path}"; then
         echo "Saved ${save_path}"
     else
-        echo "Skipped ${save_path}: failed to run plot.py" >&2
+        echo "Skipped ${save_path}: plot.py failed" >&2
     fi
 done

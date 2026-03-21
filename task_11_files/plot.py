@@ -1,75 +1,102 @@
 import argparse
+import platform
+import ctypes
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+# ─── C library ───────────────────────────────────────────────────────────────
 
-def read_meta(path):
-    meta = {}
-    with open(path, "r", encoding="utf-8") as fh:
+LIB_PATH = "./libtask11.dylib" if platform.system() == "Darwin" else "./libtask11.so"
+dp = ctypes.POINTER(ctypes.c_double)
+
+
+def load_lib():
+    lib = ctypes.CDLL(LIB_PATH)
+    lib.rational_eval.restype  = None
+    lib.rational_eval.argtypes = [dp, dp, dp, dp, ctypes.c_int,
+                                   ctypes.c_double, dp, dp]
+    return lib
+
+
+def np2c(arr):
+    return arr.ctypes.data_as(dp)
+
+
+def eval_spline_c(lib, xs, ys, dys, rs, x_grid):
+    n   = len(xs)
+    s   = ctypes.c_double()
+    ds  = ctypes.c_double()
+    cxs, cys, cdys, crs = np2c(xs), np2c(ys), np2c(dys), np2c(rs)
+    out_s  = np.empty(len(x_grid))
+    out_ds = np.empty(len(x_grid))
+    for k, x in enumerate(x_grid):
+        lib.rational_eval(cxs, cys, cdys, crs, n, x,
+                          ctypes.byref(s), ctypes.byref(ds))
+        out_s[k]  = s.value
+        out_ds[k] = ds.value
+    return out_s, out_ds
+
+# ─── file reading ─────────────────────────────────────────────────────────────
+
+def read_file(path):
+    xs, ys, dys, rs = [], [], [], []
+    with open(path) as fh:
         for line in fh:
-            line = line.strip()
-            if "=" in line:
-                key, val = line.split("=", 1)
-                meta[key.strip()] = val.strip()
-    return meta
+            s = line.strip()
+            if not s or s.startswith("#"):
+                continue
+            parts = s.split()
+            if len(parts) == 4:
+                xs.append(float(parts[0]))
+                ys.append(float(parts[1]))
+                dys.append(float(parts[2]))
+                rs.append(float(parts[3]))
+    return (np.array(xs), np.array(ys), np.array(dys), np.array(rs))
 
+# ─── main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Plot Hermite tension spline (task 11)."
-    )
-    parser.add_argument("--curve", default="data_plot/curve.txt")
-    parser.add_argument("--nodes", default="data_plot/nodes.txt")
-    parser.add_argument("--meta", default="data_plot/meta.txt")
-    parser.add_argument("--weights", default="data_plot/weights.txt")
+    parser = argparse.ArgumentParser(description="Plot rational Hermite spline (task 11).")
+    parser.add_argument("input", nargs="?", default="examples/set_1.txt")
     parser.add_argument("--save", default="")
-    parser.add_argument("--show", action="store_true")
     args = parser.parse_args()
 
-    meta = read_meta(args.meta)
-    n_nodes = meta.get("n_nodes", "?")
-    src = meta.get("input", "")
+    lib = load_lib()
+    xs, ys, dys, rs = read_file(args.input)
+    n = len(xs)
 
-    curve = np.loadtxt(args.curve)  # x  S(x)  S'(x)
-    nodes = np.loadtxt(args.nodes)  # x  y
-    weights = np.loadtxt(args.weights)  # x  sigma
-
-    x = curve[:, 0]
-    sx = curve[:, 1]
-    dsx = curve[:, 2]
-
-    nx = nodes[:, 0]
-    ny = nodes[:, 1]
-    wx = weights[:, 0]
-    sigma = weights[:, 1]
+    x_grid = np.linspace(xs[0], xs[-1], 500)
+    sx, dsx = eval_spline_c(lib, xs, ys, dys, rs, x_grid)
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 8), sharex=True)
     fig.subplots_adjust(hspace=0.06)
 
     # ── top: spline ───────────────────────────────────────────────────────────
-    ax1.plot(x, sx, color="tab:red", lw=1.8, label="S(x)")
-    ax1.scatter(nx, ny, color="black", s=30, zorder=5, label=f"nodes (n={n_nodes})")
+    ax1.plot(x_grid, sx, color="tab:red", lw=1.8, label="S(x)")
+    ax1.scatter(xs, ys, color="black", s=30, zorder=5, label=f"nodes (n={n})")
+
+    # r annotations above each node (last node has no segment — skip it)
+    for i in range(n - 1):
+        ax1.annotate(
+            f"[{i}] {rs[i]:.2f}",
+            xy=(xs[i], ys[i]),
+            xytext=(0, 8),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=7.5,
+            color="tab:blue",
+        )
 
     ax1.set_ylabel("S(x)", fontsize=12)
-    r_vals = np.unique(np.round(sigma, 4))
-    r_str  = f"{r_vals[0]:.2f}" if len(r_vals) == 1 else f"[{r_vals.min():.2f}, {r_vals.max():.2f}]"
-    title  = f"Rational Hermite spline  (n={n_nodes},  r={r_str})"
-    if src:
-        title += f"\n{src}"
-    ax1.set_title(title, fontsize=11)
+    ax1.set_title(f"Rational Hermite spline  (n={n})\n{args.input}", fontsize=11)
     ax1.legend(fontsize=9, loc="best")
     ax1.grid(True, alpha=0.35)
 
     # ── bottom: derivative ────────────────────────────────────────────────────
-    ax2.plot(x, dsx, color="tab:red", lw=1.8, label="S'(x)")
-
-    # scatter node derivatives: sigma[i]*dy[i] — these ARE the spline slope at nodes
-    # we don't have dy separately, but eval_ds at node == sigma*dy, already in dsx grid
-    # just draw vertical ticks at node positions
-    node_dsx = np.interp(nx, x, dsx)
-    ax2.scatter(nx, node_dsx, color="black", s=20, zorder=5)
-
+    ax2.plot(x_grid, dsx, color="tab:red", lw=1.8, label="S'(x)")
+    ax2.scatter(xs, np.interp(xs, x_grid, dsx), color="black", s=20, zorder=5)
     ax2.set_xlabel("x", fontsize=12)
     ax2.set_ylabel("S'(x)", fontsize=12)
     ax2.legend(fontsize=9, loc="best")
@@ -79,7 +106,7 @@ def main():
 
     if args.save:
         fig.savefig(args.save, dpi=150, bbox_inches="tight")
-    if args.show or not args.save:
+    else:
         plt.show()
 
     plt.close(fig)
