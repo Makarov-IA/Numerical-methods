@@ -16,15 +16,15 @@ int main(int argc, char *argv[]) {
     int method, set_number;
     char path[256];
     FILE* file;
-    double (*right_part)(double);
-    double (*p_part)(double);
-    double (*theoretical_solution)(double);
+    double (*right_part)(double)          = NULL;
+    double (*p_part)(double)              = NULL;
+    double (*theoretical_solution)(double) = NULL;
     double * right_part_vector, * solution, * vector, *a, *b, *c;
 
     assert(argc >= 4);
     assert(sscanf(argv[1], "%d", &N)==1);
     assert(sscanf(argv[2], "%d", &method)==1);
-    assert(sscanf(argv[3], "%d", &set_number));
+    assert(sscanf(argv[3], "%d", &set_number) == 1);
 
     right_part_vector = (double*)malloc((N-1)*sizeof(double));
     vector = (double*)malloc((N-1)*sizeof(double));
@@ -81,6 +81,10 @@ int main(int argc, char *argv[]) {
             theoretical_solution = theoretical_solution_6;
             p_part = p_part_6;
             break;
+        default:
+            fprintf(stderr, "Error: unknown set_number %d\n", set_number);
+            free(solution); free(vector); free(right_part_vector);
+            return 1;
     }
     for (int i=0; i < N-1; i++) {
         right_part_vector[i] = right_part(i*h+h/2);

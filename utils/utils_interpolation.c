@@ -169,7 +169,7 @@ double eval_lagrange(const double *nodes, const double *values, int n, double x)
 }
 
 //Пайплайн поиска коэффициентов через решение СЛАУ
-int prepare_interpolation(double (*func)(double), const double *nodes, int n_nodes,
+static int prepare_interpolation(double (*func)(double), const double *nodes, int n_nodes,
                                  double **values_out, double **coeff_out) {
     double *values = (double *)malloc(n_nodes * sizeof(double));
     double *matrix = (double *)malloc(n_nodes * n_nodes * sizeof(double));

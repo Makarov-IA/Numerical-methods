@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     double h, lambda, diff_normed, max_normed_diff, last_diff_normed;
     int limit_n, limit_m, limit_k;
 
-    assert(argc >= 3);
+    assert(argc >= 6);
     assert(sscanf(argv[1], "%d", &N)==1);
     assert(sscanf(argv[2], "%lf", &h)==1);
     assert(sscanf(argv[3], "%d", &limit_n)==1);

@@ -17,8 +17,8 @@ int main(int argc, char *argv[]) {
     char path[256];
     FILE *file;
     double *initial;
-    double *u;
-    double (*u_theor)(double, double);
+    double *u                        = NULL;
+    double (*u_theor)(double, double) = NULL;
     double max_diff;
     double u_num, u_th, diff;
     double r;
@@ -32,9 +32,9 @@ int main(int argc, char *argv[]) {
     assert(sscanf(argv[5], "%d", &number_of_points_t) == 1);
 
     // Выбор функций p(t,x), f(t,x) и начальных условий u(0,x)
-    double (*p_func)(double, double);
-    double (*f_func)(double, double);
-    double (*u0)(double);
+    double (*p_func)(double, double) = NULL;
+    double (*f_func)(double, double) = NULL;
+    double (*u0)(double)             = NULL;
 
     switch (set_number) {
         case 1:
@@ -61,6 +61,10 @@ int main(int argc, char *argv[]) {
             u0 = u0_pd_4;
             u_theor = theoretical_pd_4;
             break;
+        default:
+            fprintf(stderr, "Error: unknown set_number %d\n", set_number);
+            free(initial);
+            return 1;
     }
 
     h = 1.0/(double)(number_of_points_x - 2);

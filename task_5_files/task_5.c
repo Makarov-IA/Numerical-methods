@@ -13,10 +13,10 @@ int main(int argc, char *argv[]) {
     y_small_step, x_big_step, x_small_step, estimated_error, y_small_step_inner, \
     x_small_step_inner, max_diff, diff;
     int s, K, exiting_code, is_step_made, num_of_function, is_fixed_h;
-    double (*f)(double, double, double *);
-    double (*f_sol)(double, double *);
+    double (*f)(double, double, double *) = NULL;
+    double (*f_sol)(double, double *)     = NULL;
     double H[3] = {0, 0, 0};
-    double *additional_args_to_function;
+    double *additional_args_to_function  = NULL;
     char path[256];
     FILE* file;
     //parsing args
@@ -60,10 +60,13 @@ int main(int argc, char *argv[]) {
             f = test_function_3;
             f_sol = test_function_sol_3;
             break;
-        case 4: 
+        case 4:
             f = test_function_4;
             f_sol = test_function_sol_4;
             break;
+        default:
+            fprintf(stderr, "Error: unknown function number %d\n", num_of_function);
+            return 1;
     }
 
     //initial point

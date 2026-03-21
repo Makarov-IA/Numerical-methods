@@ -21,7 +21,7 @@ typedef struct {
     double right_derivative;
 } InputData;
 
-void init_input_data(InputData *data) {
+static void init_input_data(InputData *data) {
     data->x = NULL;
     data->y = NULL;
     data->w = NULL;
@@ -32,14 +32,14 @@ void init_input_data(InputData *data) {
     data->right_derivative = 0.0;
 }
 
-void free_input_data(InputData *data) {
+static void free_input_data(InputData *data) {
     free(data->x);
     free(data->y);
     free(data->w);
     init_input_data(data);
 }
 
-int add_input_row(InputData *data, double x, double y, double w) {
+static int add_input_row(InputData *data, double x, double y, double w) {
     double *new_x;
     double *new_y;
     double *new_w;
@@ -64,7 +64,7 @@ int add_input_row(InputData *data, double x, double y, double w) {
     return 0;
 }
 
-int read_input_file(const char *input_path, InputData *data) {
+static int read_input_file(const char *input_path, InputData *data) {
     FILE *file;
     char line[256];
     char *ptr;
@@ -111,7 +111,7 @@ int read_input_file(const char *input_path, InputData *data) {
     return 0;
 }
 
-int build_weighted_spline(const InputData *data, double *b, double *coef_c, double *d) {
+static int build_weighted_spline(const InputData *data, double *b, double *coef_c, double *d) {
     double *lower;
     double *diag;
     double *upper;
@@ -207,7 +207,7 @@ int build_weighted_spline(const InputData *data, double *b, double *coef_c, doub
     return status;
 }
 
-double eval_spline(const InputData *data, const double *b, const double *c, const double *d, double x) {
+static double eval_spline(const InputData *data, const double *b, const double *c, const double *d, double x) {
     int i;
     double dx;
 
@@ -220,7 +220,7 @@ double eval_spline(const InputData *data, const double *b, const double *c, cons
     return data->y[i] + b[i] * dx + c[i] * dx * dx + d[i] * dx * dx * dx;
 }
 
-int write_plot_data(const InputData *data, const double *b, const double *c, const double *d) {
+static int write_plot_data(const InputData *data, const double *b, const double *c, const double *d) {
     FILE *curve_file;
     FILE *nodes_file;
     int i;

@@ -6,7 +6,6 @@
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
-#include "utils_Runge.h"
 
 void set_k(double xn, double yn, double *k1, double *k2, double *k3, \
     double *k4, double h, double (*f) (double, double, double*), \
